@@ -8,6 +8,7 @@ import { QuizModal } from './components/QuizModal';
 import { PlaneDossierModal } from './components/PlaneDossierModal';
 import { VictoryModal } from './components/VictoryModal';
 import { TeacherHostView } from './components/TeacherHostView';
+import { StudentWaitingLobby } from './components/StudentWaitingLobby';
 import { RulesModal } from './components/RulesModal';
 import type { HistoricalPlane } from './data/planesData';
 import { sound } from './audio/SoundEngine';
@@ -24,8 +25,8 @@ import {
 const INITIAL_TIME = 180; // 3 minutes battle session
 
 export default function App() {
-  // Game Mode: 'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'DEBRIEF'
-  const [appMode, setAppMode] = useState<'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'DEBRIEF'>('MENU');
+  // Game Mode: 'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'
+  const [appMode, setAppMode] = useState<'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'>('MENU');
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(INITIAL_TIME);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -52,8 +53,16 @@ export default function App() {
   const [adminDuration, setAdminDuration] = useState<number>(180);
   const [adminError, setAdminError] = useState<string>('');
 
-  // Student Join State
-  const [studentPin, setStudentPin] = useState<string>('');
+  // Student Join State: Auto-fill from URL query param ?code=195401 or ?room=195401
+  const [studentPin, setStudentPin] = useState<string>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code') || params.get('room') || '';
+      return code.replace(/\D/g, '').slice(0, 6);
+    } catch {
+      return '';
+    }
+  });
   const [studentName, setStudentName] = useState<string>('');
   const [studentError, setStudentError] = useState<string>('');
 
@@ -75,7 +84,27 @@ export default function App() {
     currentRoomId ? { roomId: currentRoomId } : "skip"
   );
 
-  // Battle Countdown Timer
+  // ═══ 1. REACTIVE SYNCHRONIZATION FROM TEACHER COMMANDS ═══
+  useEffect(() => {
+    if (!roomLiveState?.room) return;
+    const roomStatus = roomLiveState.room.status;
+
+    // Khi Giảng Viên bấm "Bắt Đầu Trận Đấu", chuyển toàn bộ sinh viên đang ở phòng chờ vào trận địa
+    if (appMode === 'STUDENT_WAITING' && roomStatus === 'playing') {
+      setAppMode('STUDENT_PLAYING');
+      setTimeRemaining(roomLiveState.room.durationSeconds || INITIAL_TIME);
+      setElapsedSeconds(0);
+      setIsPaused(false);
+      sound.playAirRaidSiren();
+    }
+
+    // Khi Giảng Viên bấm "Kết Thúc Sớm" hoặc hết giờ, chuyển sang màn hình Bảng xếp hạng kết quả
+    if (appMode === 'STUDENT_PLAYING' && roomStatus === 'finished') {
+      setAppMode('DEBRIEF');
+    }
+  }, [roomLiveState?.room?.status, appMode]);
+
+  // ═══ 2. BATTLE COUNTDOWN TIMER ═══
   useEffect(() => {
     if (appMode !== 'STUDENT_PLAYING' || isPaused || activeDossierPlane !== null || isQuizOpen) return;
 
@@ -95,7 +124,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, [appMode, isPaused, activeDossierPlane, isQuizOpen]);
 
-  // Sync Student Progress to Convex Backend in Realtime
+  // ═══ 3. SYNC STUDENT PROGRESS TO CONVEX IN REALTIME ═══
   const syncToConvex = useCallback((recentEventText?: string, isDone = false) => {
     if (!currentStudentPlayerId) return;
     const accuracy = shotsFired > 0 ? Math.min(100, Math.round((planesDownedCount / shotsFired) * 100)) : 0;
@@ -112,8 +141,8 @@ export default function App() {
   }, [currentStudentPlayerId, score, planesDownedCount, shotsFired, questionsAnswered, syncPlayerProgressMutation]);
 
   useEffect(() => {
-    if (appMode === 'STUDENT_PLAYING') {
-      syncToConvex();
+    if (appMode === 'STUDENT_PLAYING' || appMode === 'DEBRIEF') {
+      syncToConvex(undefined, appMode === 'DEBRIEF');
     }
   }, [score, planesDownedCount, shotsFired, questionsAnswered, appMode, syncToConvex]);
 
@@ -170,9 +199,15 @@ export default function App() {
       setAmmoFlak(2);
       setTimeRemaining(res.room?.durationSeconds || INITIAL_TIME);
       setElapsedSeconds(0);
-      setAppMode('STUDENT_PLAYING');
+
+      // Nếu phòng đang ở trạng thái chờ -> vào sảnh chờ STUDENT_WAITING
+      if (res.room?.status === 'waiting') {
+        setAppMode('STUDENT_WAITING');
+      } else {
+        setAppMode('STUDENT_PLAYING');
+        sound.playAirRaidSiren();
+      }
       setIsPaused(false);
-      sound.playAirRaidSiren();
     } catch (err: any) {
       setStudentError(err.message || 'Không thể vào phòng thi đấu. Vui lòng kiểm tra lại mã PIN!');
     }
@@ -219,8 +254,6 @@ export default function App() {
     setCurrentRoomId(null);
     setCurrentRoomCode('');
     setCurrentStudentPlayerId(null);
-    setStudentPin('');
-    setStudentName('');
     setAppMode('MENU');
   };
 
@@ -230,8 +263,8 @@ export default function App() {
       {appMode === 'TEACHER_HOST' && currentRoomId && (
         <TeacherHostView
           roomCode={currentRoomCode}
-          players={roomLiveState?.players || []}
-          logs={roomLiveState?.logs || []}
+          players={(roomLiveState?.players as any) || []}
+          logs={(roomLiveState?.logs as any) || []}
           status={roomLiveState?.room?.status || 'waiting'}
           durationSeconds={roomLiveState?.room?.durationSeconds || 180}
           onStartGame={() => startRoomBattleMutation({ roomId: currentRoomId })}
@@ -240,7 +273,18 @@ export default function App() {
         />
       )}
 
-      {/* ═══ 2. GIAO DIỆN TRANG CHỦ: CHỈ CÓ 2 KHUNG (QUẢN TRÒ VÀ NGƯỜI CHƠI) ═══ */}
+      {/* ═══ 2. SẢNH CHỜ CHIẾN SĨ (STUDENT WAITING LOBBY TRƯỚC KHI GIÁO VIÊN BẤM BẮT ĐẦU) ═══ */}
+      {appMode === 'STUDENT_WAITING' && currentRoomId && (
+        <StudentWaitingLobby
+          roomCode={currentRoomCode}
+          playerName={studentName}
+          hostName={roomLiveState?.room?.hostName}
+          players={(roomLiveState?.players as any) || []}
+          onLeave={handleLeaveRoom}
+        />
+      )}
+
+      {/* ═══ 3. GIAO DIỆN TRANG CHỦ CHÍNH (QUẢN TRÒ & NGƯỜI CHƠI) ═══ */}
       {appMode === 'MENU' && (
         <div className="relative z-30 w-full h-full flex flex-col justify-center items-center p-6 sm:p-10 camo-gradient trench-texture overflow-y-auto">
           {/* Top Title Banner & Rules Button */}
@@ -265,7 +309,7 @@ export default function App() {
             </p>
           </div>
 
-          {/* ═══ CHỈ CÓ 2 KHUNG VAI TRÒ DUY NHẤT (QUẢN TRÒ & NGƯỜI CHƠI) ═══ */}
+          {/* ═══ 2 KHUNG VAI TRÒ DUY NHẤT (QUẢN TRÒ & NGƯỜI CHƠI) ═══ */}
           <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 👑 KHUNG 1: QUẢN TRÒ (TẠO PHÒNG MÁY CHIẾU) */}
             <div className="bg-[#1c2419]/95 border-2 border-[#ffd700]/80 hover:border-[#ffd700] rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl backdrop-blur-md relative overflow-hidden group transition-all">
@@ -286,7 +330,7 @@ export default function App() {
                     1. QUẢN TRÒ
                   </h2>
                   <p className="text-xs text-gray-300 font-military mt-1 leading-relaxed">
-                    Dành cho Giảng viên tạo phòng, phát mã PIN cho học sinh, trình chiếu bảng điểm trực tiếp và bục vinh danh Top 3 của lớp.
+                    Dành cho Giảng viên tạo phòng, phát mã PIN và mã QR cho học sinh quét vào, trình chiếu bảng điểm trực tiếp và bục vinh danh Top 3 của lớp.
                   </p>
                 </div>
               </div>
@@ -325,7 +369,7 @@ export default function App() {
                     2. THAM GIA PHÒNG
                   </h2>
                   <p className="text-xs text-gray-300 font-military mt-1 leading-relaxed">
-                    Dành cho Học sinh tham gia trận đấu. Nhập mã PIN đang hiển thị trên máy chiếu của Giảng viên để vào thi đấu.
+                    Dành cho Học sinh tham gia trận đấu. Nhập mã PIN đang hiển thị trên máy chiếu của Giảng viên (hoặc quét mã QR) để vào thi đấu.
                   </p>
                 </div>
 
@@ -379,7 +423,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ═══ 3. MODAL ĐĂNG NHẬP QUẢN TRÒ ═══ */}
+      {/* ═══ 4. MODAL ĐĂNG NHẬP QUẢN TRÒ ═══ */}
       {showAdminLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
           <div className="w-full max-w-md bg-[#1c2419] border-2 border-[#ffd700] rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 text-[#f7f6f2] relative">
@@ -475,7 +519,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ═══ 4. MÀN HÌNH BẮN PHÁO TRONG TRẬN ĐẤU CỦA HỌC SINH ═══ */}
+      {/* ═══ 5. MÀN HÌNH BẮN PHÁO TRONG TRẬN ĐẤU CỦA HỌC SINH ═══ */}
       {appMode === 'STUDENT_PLAYING' && (
         <div className="w-full h-full relative">
           <Header
@@ -510,7 +554,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ═══ 5. PHASE 1 QUIZ RELOAD MODAL ═══ */}
+      {/* ═══ 6. PHASE 1 QUIZ RELOAD MODAL ═══ */}
       <QuizModal
         isOpen={isQuizOpen}
         currentAmmo={ammo37mm + ammoFlak}
@@ -518,14 +562,14 @@ export default function App() {
         onCloseToBattle={() => setIsQuizOpen(false)}
       />
 
-      {/* ═══ 6. PHASE 3 MANDATORY HISTORICAL DOSSIER MODAL (STRICT NO-SKIP) ═══ */}
+      {/* ═══ 7. PHASE 3 MANDATORY HISTORICAL DOSSIER MODAL (STRICT NO-SKIP) ═══ */}
       <PlaneDossierModal
         plane={activeDossierPlane}
         countdownSeconds={6}
         onFinishedReading={handleFinishedReadingDossier}
       />
 
-      {/* ═══ 7. DEBRIEF / VICTORY MODAL (BẢNG XẾP HẠNG CỦA PHÒNG LỚP VỪA CHƠI) ═══ */}
+      {/* ═══ 8. DEBRIEF / VICTORY MODAL (BẢNG XẾP HẠNG CỦA PHÒNG LỚP VỪA CHƠI) ═══ */}
       <VictoryModal
         isOpen={appMode === 'DEBRIEF'}
         score={score}
@@ -537,7 +581,7 @@ export default function App() {
         onLeaveRoom={handleLeaveRoom}
       />
 
-      {/* ═══ 8. RULES MODAL ═══ */}
+      {/* ═══ 9. RULES MODAL ═══ */}
       <RulesModal
         isOpen={isRulesOpen}
         onClose={() => setIsRulesOpen(false)}
