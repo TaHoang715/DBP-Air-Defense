@@ -58,9 +58,9 @@ export default function App() {
   const [studentError, setStudentError] = useState<string>('');
 
   // Multiplayer Tournament Room Info
-  const [currentRoomId, setCurrentRoomId] = useState<Id<"rooms"> | null>(null);
+  const [currentRoomId, setCurrentRoomId] = useState<Id<"dbpRooms"> | null>(null);
   const [currentRoomCode, setCurrentRoomCode] = useState<string>('');
-  const [currentStudentPlayerId, setCurrentStudentPlayerId] = useState<Id<"roomPlayers"> | null>(null);
+  const [currentStudentPlayerId, setCurrentStudentPlayerId] = useState<Id<"dbpPlayers"> | null>(null);
 
   // Convex Mutations & Queries
   const createRoomMutation = useMutation(api.rooms.createRoom);
@@ -137,7 +137,7 @@ export default function App() {
       setShowAdminLoginModal(false);
       setAppMode('TEACHER_HOST');
     } catch (err: any) {
-      setAdminError('Lỗi khi mở phòng thi đấu: ' + err.message);
+      setAdminError('Lỗi khi mở phòng thi đấu: ' + (err.message || String(err)));
     }
   };
 
@@ -532,7 +532,7 @@ export default function App() {
         planesDownedCount={planesDownedCount}
         shotsFired={shotsFired}
         questionsAnswered={questionsAnswered}
-        roomPlayers={roomLiveState?.players || []}
+        roomPlayers={(roomLiveState?.players as any) || []}
         currentPlayerName={studentName}
         onLeaveRoom={handleLeaveRoom}
       />

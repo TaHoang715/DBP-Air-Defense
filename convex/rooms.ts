@@ -10,7 +10,7 @@ export const createRoom = mutation({
   handler: async (ctx, args) => {
     // Generate PIN 6 chữ số dễ nhớ (ví dụ: 195401, 715902...)
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const roomId = await ctx.db.insert("rooms", {
+    const roomId = await ctx.db.insert("dbpRooms", {
       code: pin,
       hostName: args.hostName.trim(),
       status: "waiting",
@@ -18,7 +18,7 @@ export const createRoom = mutation({
     });
 
     // Tạo bản ghi Host
-    const hostPlayerId = await ctx.db.insert("roomPlayers", {
+    const hostPlayerId = await ctx.db.insert("dbpPlayers", {
       roomId,
       name: args.hostName.trim() + " (Giảng Viên)",
       score: 0,
@@ -32,7 +32,7 @@ export const createRoom = mutation({
       lastUpdated: Date.now(),
     });
 
-    await ctx.db.insert("battleLogs", {
+    await ctx.db.insert("dbpBattleLogs", {
       roomId,
       playerName: args.hostName.trim(),
       message: "Đã tạo phòng thi đấu. Đang chờ sinh viên tham gia!",
@@ -53,7 +53,7 @@ export const joinRoom = mutation({
   handler: async (ctx, args) => {
     const cleanPin = args.code.trim();
     const room = await ctx.db
-      .query("rooms")
+      .query("dbpRooms")
       .withIndex("by_code", (q) => q.eq("code", cleanPin))
       .first();
 
@@ -67,7 +67,7 @@ export const joinRoom = mutation({
 
     // Check if player name already exists in this room
     const existingPlayers = await ctx.db
-      .query("roomPlayers")
+      .query("dbpPlayers")
       .withIndex("by_room", (q) => q.eq("roomId", room._id))
       .collect();
 
@@ -77,7 +77,7 @@ export const joinRoom = mutation({
       finalName = `${finalName} #${existingPlayers.length + 1}`;
     }
 
-    const playerId = await ctx.db.insert("roomPlayers", {
+    const playerId = await ctx.db.insert("dbpPlayers", {
       roomId: room._id,
       name: finalName,
       score: 0,
@@ -92,7 +92,7 @@ export const joinRoom = mutation({
     });
 
     // Add log
-    await ctx.db.insert("battleLogs", {
+    await ctx.db.insert("dbpBattleLogs", {
       roomId: room._id,
       playerName: finalName,
       message: `${finalName} đã vào trận địa!`,
@@ -106,14 +106,14 @@ export const joinRoom = mutation({
 
 // 3. Realtime Subscription: Lấy trạng thái phòng, danh sách bảng điểm và nhật ký
 export const getRoomLiveState = query({
-  args: { roomId: v.id("rooms") },
+  args: { roomId: v.id("dbpRooms") },
   handler: async (ctx, args) => {
     const room = await ctx.db.get(args.roomId);
     if (!room) return null;
 
-    // Lấy toàn bộ người chơi (trừ host nếu host không bắn)
+    // Lấy toàn bộ người chơi
     const players = await ctx.db
-      .query("roomPlayers")
+      .query("dbpPlayers")
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
       .collect();
 
@@ -122,7 +122,7 @@ export const getRoomLiveState = query({
 
     // Lấy 15 nhật ký chiến sự mới nhất
     const logs = await ctx.db
-      .query("battleLogs")
+      .query("dbpBattleLogs")
       .withIndex("by_room_time", (q) => q.eq("roomId", args.roomId))
       .order("desc")
       .take(15);
@@ -133,14 +133,14 @@ export const getRoomLiveState = query({
 
 // 4. Giảng viên bấm Bắt đầu trận đấu (Đồng bộ tất cả màn hình)
 export const startRoomBattle = mutation({
-  args: { roomId: v.id("rooms") },
+  args: { roomId: v.id("dbpRooms") },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.roomId, {
       status: "playing",
       startedAt: Date.now(),
     });
 
-    await ctx.db.insert("battleLogs", {
+    await ctx.db.insert("dbpBattleLogs", {
       roomId: args.roomId,
       playerName: "CHỈ HUY TRƯỞNG",
       message: "LỆNH TỔNG CÔNG KÍCH! TOÀN BỘ PHÁO CAO XẠ 37MM KHAI HỎA!",
@@ -153,7 +153,7 @@ export const startRoomBattle = mutation({
 // 5. Sinh viên cập nhật điểm số & thành tích trực tiếp (Realtime Sync)
 export const syncPlayerProgress = mutation({
   args: {
-    playerId: v.id("roomPlayers"),
+    playerId: v.id("dbpPlayers"),
     score: v.number(),
     planesDowned: v.number(),
     accuracy: v.number(),
@@ -179,7 +179,7 @@ export const syncPlayerProgress = mutation({
 
     // Nếu có sự kiện bắn hạ máy bay thì đẩy vào Battle Log
     if (args.recentEvent && args.recentEvent.includes("Bắn hạ")) {
-      await ctx.db.insert("battleLogs", {
+      await ctx.db.insert("dbpBattleLogs", {
         roomId: player.roomId,
         playerName: player.name,
         message: `${player.name} ${args.recentEvent}`,
@@ -192,14 +192,14 @@ export const syncPlayerProgress = mutation({
 
 // 6. Giảng viên kết thúc trận đấu
 export const finishRoomBattle = mutation({
-  args: { roomId: v.id("rooms") },
+  args: { roomId: v.id("dbpRooms") },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.roomId, {
       status: "finished",
       finishedAt: Date.now(),
     });
 
-    await ctx.db.insert("battleLogs", {
+    await ctx.db.insert("dbpBattleLogs", {
       roomId: args.roomId,
       playerName: "HỆ THỐNG",
       message: "HẾT GIỜ! TOÀN THẮNG CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954!",
