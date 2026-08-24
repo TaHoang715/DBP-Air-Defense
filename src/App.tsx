@@ -7,25 +7,15 @@ import { Header } from './components/Header';
 import { QuizModal } from './components/QuizModal';
 import { PlaneDossierModal } from './components/PlaneDossierModal';
 import { VictoryModal } from './components/VictoryModal';
-import { LeaderboardModal } from './components/LeaderboardModal';
 import { TeacherHostView } from './components/TeacherHostView';
 import { RulesModal } from './components/RulesModal';
-import type { LeaderboardEntry } from './components/LeaderboardModal';
 import type { HistoricalPlane } from './data/planesData';
 import { sound } from './audio/SoundEngine';
 import {
   Crosshair,
-  Trophy,
-  Users,
   Crown,
-  Play,
-  Flame,
-  Clock,
-  Award,
   Lock,
   LogIn,
-  Shield,
-  Sparkles,
   ScrollText,
   AlertCircle,
   X
@@ -33,39 +23,9 @@ import {
 
 const INITIAL_TIME = 180; // 3 minutes battle session
 
-const DEFAULT_LEADERBOARD: LeaderboardEntry[] = [
-  {
-    id: 'legend_1',
-    name: 'Khẩu đội Anh hùng Tô Vĩnh Diện',
-    score: 3850,
-    planesDowned: 14,
-    accuracy: 92,
-    date: '13/03/1954',
-    badge: 'Anh hùng LLVTND'
-  },
-  {
-    id: 'legend_2',
-    name: 'Tiểu đoàn Pháo cao xạ 383',
-    score: 2920,
-    planesDowned: 11,
-    accuracy: 85,
-    date: '15/03/1954',
-    badge: 'Dũng sĩ Diệt Máy bay'
-  },
-  {
-    id: 'legend_3',
-    name: 'Đại đội 815 - Đồi Him Lam',
-    score: 2150,
-    planesDowned: 8,
-    accuracy: 79,
-    date: '17/03/1954',
-    badge: 'Chiến sĩ Thi đua'
-  }
-];
-
 export default function App() {
-  // Game Mode: 'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'SINGLE_PLAYING' | 'DEBRIEF'
-  const [appMode, setAppMode] = useState<'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'SINGLE_PLAYING' | 'DEBRIEF'>('MENU');
+  // Game Mode: 'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'DEBRIEF'
+  const [appMode, setAppMode] = useState<'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'DEBRIEF'>('MENU');
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(INITIAL_TIME);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -82,7 +42,6 @@ export default function App() {
   // Modals
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [activeDossierPlane, setActiveDossierPlane] = useState<HistoricalPlane | null>(null);
-  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [isRulesOpen, setIsRulesOpen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
@@ -109,31 +68,16 @@ export default function App() {
   const startRoomBattleMutation = useMutation(api.rooms.startRoomBattle);
   const syncPlayerProgressMutation = useMutation(api.rooms.syncPlayerProgress);
   const finishRoomBattleMutation = useMutation(api.rooms.finishRoomBattle);
-  const submitGlobalScoreMutation = useMutation(api.leaderboard.submitScore);
 
-  // Realtime Live Room Subscription for Teacher
+  // Realtime Live Room Subscription
   const roomLiveState = useQuery(
     api.rooms.getRoomLiveState,
     currentRoomId ? { roomId: currentRoomId } : "skip"
   );
 
-  // Persistent Local Leaderboard
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(() => {
-    const saved = localStorage.getItem('dbp_leaderboard');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return DEFAULT_LEADERBOARD;
-      }
-    }
-    return DEFAULT_LEADERBOARD;
-  });
-
   // Battle Countdown Timer
   useEffect(() => {
-    const isPlaying = appMode === 'SINGLE_PLAYING' || appMode === 'STUDENT_PLAYING';
-    if (!isPlaying || isPaused || activeDossierPlane !== null || isQuizOpen) return;
+    if (appMode !== 'STUDENT_PLAYING' || isPaused || activeDossierPlane !== null || isQuizOpen) return;
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -234,26 +178,6 @@ export default function App() {
     }
   };
 
-  // 3. Chơi luyện tập đơn (Solo)
-  const handleStartSoloGame = () => {
-    setScore(0);
-    setPlanesDownedCount(0);
-    setShotsFired(0);
-    setQuestionsAnswered(0);
-    setAmmo37mm(10);
-    setAmmoFlak(2);
-    setTimeRemaining(INITIAL_TIME);
-    setElapsedSeconds(0);
-    setCurrentRoomId(null);
-    setCurrentRoomCode('');
-    setCurrentStudentPlayerId(null);
-    setAppMode('SINGLE_PLAYING');
-    setIsPaused(false);
-    setActiveDossierPlane(null);
-    setIsQuizOpen(false);
-    sound.playAirRaidSiren();
-  };
-
   // Consume Ammo Callback
   const handleConsumeAmmo = (flak: boolean): boolean => {
     if (flak) {
@@ -291,37 +215,13 @@ export default function App() {
     }
   };
 
-  // Save Score
-  const handleSaveScore = (name: string) => {
-    const accuracy = shotsFired > 0 ? Math.min(100, Math.round((planesDownedCount / shotsFired) * 100)) : 0;
-    let badge = 'Chiến sĩ Điện Biên';
-    if (planesDownedCount >= 10) badge = 'Anh hùng Pháo cao xạ';
-    else if (planesDownedCount >= 5) badge = 'Dũng sĩ Diệt Máy bay';
-
-    const newEntry: LeaderboardEntry = {
-      id: Date.now().toString(),
-      name,
-      score,
-      planesDowned: planesDownedCount,
-      accuracy,
-      date: new Date().toLocaleDateString('vi-VN'),
-      badge
-    };
-
-    const updated = [newEntry, ...leaderboard].sort((a, b) => b.score - a.score).slice(0, 20);
-    setLeaderboard(updated);
-    localStorage.setItem('dbp_leaderboard', JSON.stringify(updated));
-
-    // Submit to Convex global leaderboard
-    submitGlobalScoreMutation({
-      name,
-      score,
-      planesDowned: planesDownedCount,
-      accuracy,
-      badge,
-      shotsFired,
-      questionsAnswered,
-    }).catch(() => {});
+  const handleLeaveRoom = () => {
+    setCurrentRoomId(null);
+    setCurrentRoomCode('');
+    setCurrentStudentPlayerId(null);
+    setStudentPin('');
+    setStudentName('');
+    setAppMode('MENU');
   };
 
   return (
@@ -336,38 +236,38 @@ export default function App() {
           durationSeconds={roomLiveState?.room?.durationSeconds || 180}
           onStartGame={() => startRoomBattleMutation({ roomId: currentRoomId })}
           onFinishGame={() => finishRoomBattleMutation({ roomId: currentRoomId })}
-          onExit={() => setAppMode('MENU')}
+          onExit={handleLeaveRoom}
         />
       )}
 
-      {/* ═══ 2. GIAO DIỆN TRANG CHỦ CHÍNH: 2 KHUNG RÕ RÀNG (QUẢN TRÒ & NGƯỜI CHƠI) ═══ */}
+      {/* ═══ 2. GIAO DIỆN TRANG CHỦ: CHỈ CÓ 2 KHUNG (QUẢN TRÒ VÀ NGƯỜI CHƠI) ═══ */}
       {appMode === 'MENU' && (
-        <div className="relative z-30 w-full h-full flex flex-col justify-between p-6 sm:p-10 camo-gradient trench-texture overflow-y-auto">
+        <div className="relative z-30 w-full h-full flex flex-col justify-center items-center p-6 sm:p-10 camo-gradient trench-texture overflow-y-auto">
           {/* Top Title Banner & Rules Button */}
-          <div className="text-center space-y-3 max-w-4xl mx-auto pt-2">
+          <div className="text-center space-y-3 max-w-3xl w-full mb-8">
             <div className="flex items-center justify-center gap-3">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8b0000] border border-[#ffd700]/60 text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-950/60">
-                ★ CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 · ĐẤU TRƯỜNG PHÒNG KHÔNG ★
+                ★ CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 ★
               </div>
               <button
                 onClick={() => setIsRulesOpen(true)}
-                className="px-3.5 py-1.5 rounded-full bg-[#2d3b27] hover:bg-[#3a4b32] border border-[#ffd700]/50 text-[#ffd700] font-military font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                className="px-4 py-1.5 rounded-full bg-[#2d3b27] hover:bg-[#3a4b32] border border-[#ffd700]/50 text-[#ffd700] font-military font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
               >
-                <ScrollText className="w-3.5 h-3.5" /> LUẬT CHƠI
+                <ScrollText className="w-4 h-4" /> LUẬT CHƠI
               </button>
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-military text-white tracking-wide">
               PHÁO CAO XẠ 37MM BẮN MÁY BAY
             </h1>
-            <p className="text-xs sm:text-sm text-gray-300 max-w-2xl mx-auto">
-              Trò chơi giáo dục lịch sử tương tác 3 giai đoạn: Nạp đạn trắc nghiệm ➔ Bắn máy bay tăng tốc ➔ Đọc tư liệu lịch sử bắt buộc 6 giây.
+            <p className="text-xs sm:text-sm text-gray-300 max-w-xl mx-auto">
+              Đấu trường phòng không thời gian thực dành cho lớp học. Nạp đạn bằng kiến thức lịch sử, bắn máy bay và đọc tư liệu bắt buộc.
             </p>
           </div>
 
-          {/* ═══ 2 KHUNG LỰA CHỌN VAI TRÒ CHÍNH (QUẢN TRÒ & NGƯỜI CHƠI) ═══ */}
-          <div className="max-w-5xl w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 my-auto py-6">
-            {/* 👑 KHUNG 1: QUẢN TRÒ (DÀNH CHO GIẢNG VIÊN / MÁY CHIẾU) */}
+          {/* ═══ CHỈ CÓ 2 KHUNG VAI TRÒ DUY NHẤT (QUẢN TRÒ & NGƯỜI CHƠI) ═══ */}
+          <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 👑 KHUNG 1: QUẢN TRÒ (TẠO PHÒNG MÁY CHIẾU) */}
             <div className="bg-[#1c2419]/95 border-2 border-[#ffd700]/80 hover:border-[#ffd700] rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl backdrop-blur-md relative overflow-hidden group transition-all">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#8b0000]/20 rounded-full blur-3xl -z-0 pointer-events-none" />
 
@@ -386,7 +286,7 @@ export default function App() {
                     1. QUẢN TRÒ
                   </h2>
                   <p className="text-xs text-gray-300 font-military mt-1 leading-relaxed">
-                    Dành cho Giảng viên / Người điều hành lớp học. Tạo phòng thi đấu, phát mã PIN cho cả lớp, theo dõi Bảng điểm Live và Bục vinh danh Top 3.
+                    Dành cho Giảng viên tạo phòng, phát mã PIN cho học sinh, trình chiếu bảng điểm trực tiếp và bục vinh danh Top 3 của lớp.
                   </p>
                 </div>
               </div>
@@ -401,12 +301,12 @@ export default function App() {
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-3 shadow-xl shadow-red-950/80 transition-all cursor-pointer hover:scale-[1.02]"
                 >
                   <Lock className="w-5 h-5 text-[#ffd700]" />
-                  ĐĂNG NHẬP QUẢN TRÒ & TẠO PHÒNG
+                  ĐĂNG NHẬP & TẠO PHÒNG
                 </button>
               </div>
             </div>
 
-            {/* 🎯 KHUNG 2: NGƯỜI CHƠI (DÀNH CHO SINH VIÊN / PHÁO THỦ) */}
+            {/* 🎯 KHUNG 2: NGƯỜI CHƠI (THAM GIA PHÒNG) */}
             <div className="bg-[#1c2419]/95 border-2 border-[#44563a] hover:border-emerald-500/80 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl backdrop-blur-md relative overflow-hidden group transition-all">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -z-0 pointer-events-none" />
 
@@ -416,16 +316,16 @@ export default function App() {
                     <Crosshair className="w-8 h-8" />
                   </div>
                   <span className="px-3 py-1 bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-military font-bold text-xs rounded-full">
-                    SINH VIÊN THAM CHIẾN
+                    HỌC SINH THAM CHIẾN
                   </span>
                 </div>
 
                 <div>
                   <h2 className="text-2xl font-black font-military text-white">
-                    2. THAM GIA TRÒ CHƠI
+                    2. THAM GIA PHÒNG
                   </h2>
                   <p className="text-xs text-gray-300 font-military mt-1 leading-relaxed">
-                    Dành cho Sinh viên tham gia trận đấu. Nhập mã PIN phòng hiển thị trên máy chiếu của Giảng viên để thi đấu cùng cả lớp.
+                    Dành cho Học sinh tham gia trận đấu. Nhập mã PIN đang hiển thị trên máy chiếu của Giảng viên để vào thi đấu.
                   </p>
                 </div>
 
@@ -447,7 +347,7 @@ export default function App() {
 
                   <div>
                     <label className="block text-[11px] font-military text-gray-300 mb-1">
-                      Họ & Tên Sinh Viên:
+                      Họ & Tên Học Sinh:
                     </label>
                     <input
                       type="text"
@@ -470,38 +370,11 @@ export default function App() {
                     className="w-full py-3.5 mt-1 rounded-2xl bg-[#44563a] hover:bg-[#556b2f] text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-3 shadow-xl shadow-green-950/50 transition-all cursor-pointer hover:scale-[1.02]"
                   >
                     <LogIn className="w-5 h-5 text-emerald-300" />
-                    VÀO TRẬN ĐỊA THI ĐẤU
+                    VÀO PHÒNG THI ĐẤU
                   </button>
                 </form>
               </div>
             </div>
-          </div>
-
-          {/* Bottom Bar: Solo Practice & Leaderboard */}
-          <div className="max-w-4xl w-full mx-auto flex flex-wrap items-center justify-center gap-4 text-xs font-military pt-2 pb-2">
-            <button
-              onClick={() => setIsRulesOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-gray-300 hover:text-[#ffd700] flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <ScrollText className="w-4 h-4 text-[#ffd700]" />
-              Luật Chơi
-            </button>
-
-            <button
-              onClick={handleStartSoloGame}
-              className="px-5 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-gray-300 hover:text-white flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Play className="w-4 h-4 text-emerald-400" />
-              Chơi Luyện Tập Cá Nhân (Solo)
-            </button>
-
-            <button
-              onClick={() => setIsLeaderboardOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-gray-300 hover:text-[#ffd700] flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Trophy className="w-4 h-4 text-[#ffd700]" />
-              Bảng Vàng Danh Dự
-            </button>
           </div>
         </div>
       )}
@@ -602,8 +475,8 @@ export default function App() {
         </div>
       )}
 
-      {/* ═══ 4. MÀN HÌNH BẮN PHÁO TRONG TRẬN ĐẤU (SINH VIÊN HOẶC SOLO) ═══ */}
-      {(appMode === 'SINGLE_PLAYING' || appMode === 'STUDENT_PLAYING') && (
+      {/* ═══ 4. MÀN HÌNH BẮN PHÁO TRONG TRẬN ĐẤU CỦA HỌC SINH ═══ */}
+      {appMode === 'STUDENT_PLAYING' && (
         <div className="w-full h-full relative">
           <Header
             score={score}
@@ -614,7 +487,7 @@ export default function App() {
             useFlak={useFlak}
             onToggleFlak={() => setUseFlak(!useFlak)}
             onOpenQuiz={() => setIsQuizOpen(true)}
-            onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
+            onOpenLeaderboard={() => {}}
             isMuted={isMuted}
             onToggleMute={() => setIsMuted(sound.toggleMute())}
           />
@@ -622,7 +495,7 @@ export default function App() {
           {/* Canvas Engine */}
           <div className="w-full h-full pt-16">
             <CanvasGame
-              isPlaying={appMode === 'SINGLE_PLAYING' || appMode === 'STUDENT_PLAYING'}
+              isPlaying={appMode === 'STUDENT_PLAYING'}
               isPaused={isPaused || activeDossierPlane !== null || isQuizOpen}
               ammo37mm={ammo37mm}
               ammoFlak={ammoFlak}
@@ -652,26 +525,19 @@ export default function App() {
         onFinishedReading={handleFinishedReadingDossier}
       />
 
-      {/* ═══ 7. DEBRIEF / VICTORY MODAL ═══ */}
+      {/* ═══ 7. DEBRIEF / VICTORY MODAL (BẢNG XẾP HẠNG CỦA PHÒNG LỚP VỪA CHƠI) ═══ */}
       <VictoryModal
         isOpen={appMode === 'DEBRIEF'}
         score={score}
         planesDownedCount={planesDownedCount}
         shotsFired={shotsFired}
         questionsAnswered={questionsAnswered}
-        onPlayAgain={handleStartSoloGame}
-        onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
-        onSaveScore={handleSaveScore}
+        roomPlayers={roomLiveState?.players || []}
+        currentPlayerName={studentName}
+        onLeaveRoom={handleLeaveRoom}
       />
 
-      {/* ═══ 8. LEADERBOARD MODAL ═══ */}
-      <LeaderboardModal
-        isOpen={isLeaderboardOpen}
-        onClose={() => setIsLeaderboardOpen(false)}
-        entries={leaderboard}
-      />
-
-      {/* ═══ 9. RULES MODAL ═══ */}
+      {/* ═══ 8. RULES MODAL ═══ */}
       <RulesModal
         isOpen={isRulesOpen}
         onClose={() => setIsRulesOpen(false)}
