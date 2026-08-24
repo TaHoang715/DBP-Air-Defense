@@ -5,12 +5,14 @@ import { QuizModal } from './components/QuizModal';
 import { PlaneDossierModal } from './components/PlaneDossierModal';
 import { VictoryModal } from './components/VictoryModal';
 import { LeaderboardModal } from './components/LeaderboardModal';
+import { MultiplayerRoomModal } from './components/MultiplayerRoomModal';
 import type { LeaderboardEntry } from './components/LeaderboardModal';
 import type { HistoricalPlane } from './data/planesData';
 import { sound } from './audio/SoundEngine';
 import {
   Crosshair,
-  Trophy
+  Trophy,
+  Users
 } from 'lucide-react';
 
 const INITIAL_TIME = 180; // 3 minutes battle session
@@ -65,6 +67,7 @@ export default function App() {
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [activeDossierPlane, setActiveDossierPlane] = useState<HistoricalPlane | null>(null);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
+  const [isMultiplayerOpen, setIsMultiplayerOpen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Persistent Leaderboard
@@ -241,6 +244,14 @@ export default function App() {
               </button>
 
               <button
+                onClick={() => setIsMultiplayerOpen(true)}
+                className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-[#d4af37]/60 text-white font-military font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Users className="w-5 h-5 text-emerald-400" />
+                ĐẤU TRƯỜNG PHÒNG LỚP HỌC
+              </button>
+
+              <button
                 onClick={() => setIsLeaderboardOpen(true)}
                 className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-black/50 hover:bg-black/70 border border-[#d4af37]/60 text-[#ffd700] font-military font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
@@ -319,6 +330,15 @@ export default function App() {
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
         entries={leaderboard}
+      />
+
+      {/* ═══ 7. MULTIPLAYER ROOM MODAL ═══ */}
+      <MultiplayerRoomModal
+        isOpen={isMultiplayerOpen}
+        onClose={() => setIsMultiplayerOpen(false)}
+        onStartBattle={(roomCode) => {
+          handleStartGame();
+        }}
       />
     </div>
   );
