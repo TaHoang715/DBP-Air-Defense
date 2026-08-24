@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '../convex/_generated/api';
+import type { Id } from '../convex/_generated/dataModel';
 import { CanvasGame } from './game/CanvasGame';
 import { Header } from './components/Header';
 import { QuizModal } from './components/QuizModal';
@@ -6,13 +9,19 @@ import { PlaneDossierModal } from './components/PlaneDossierModal';
 import { VictoryModal } from './components/VictoryModal';
 import { LeaderboardModal } from './components/LeaderboardModal';
 import { MultiplayerRoomModal } from './components/MultiplayerRoomModal';
+import { TeacherHostView } from './components/TeacherHostView';
 import type { LeaderboardEntry } from './components/LeaderboardModal';
 import type { HistoricalPlane } from './data/planesData';
 import { sound } from './audio/SoundEngine';
 import {
   Crosshair,
   Trophy,
-  Users
+  Users,
+  Crown,
+  Play,
+  Flame,
+  Clock,
+  Award
 } from 'lucide-react';
 
 const INITIAL_TIME = 180; // 3 minutes battle session
@@ -48,8 +57,8 @@ const DEFAULT_LEADERBOARD: LeaderboardEntry[] = [
 ];
 
 export default function App() {
-  // Game States
-  const [gameState, setGameState] = useState<'MENU' | 'PLAYING' | 'DEBRIEF'>('MENU');
+  // Game Mode States: 'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'SINGLE_PLAYING' | 'DEBRIEF'
+  const [appMode, setAppMode] = useState<'MENU' | 'TEACHER_HOST' | 'STUDENT_PLAYING' | 'SINGLE_PLAYING' | 'DEBRIEF'>('MENU');
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(INITIAL_TIME);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
@@ -67,8 +76,28 @@ export default function App() {
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [activeDossierPlane, setActiveDossierPlane] = useState<HistoricalPlane | null>(null);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
-  const [isMultiplayerOpen, setIsMultiplayerOpen] = useState<boolean>(false);
+  const [isMultiplayerModalOpen, setIsMultiplayerModalOpen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Multiplayer Tournament Room Info
+  const [currentRoomId, setCurrentRoomId] = useState<Id<"rooms"> | null>(null);
+  const [currentRoomCode, setCurrentRoomCode] = useState<string>('');
+  const [currentStudentPlayerId, setCurrentStudentPlayerId] = useState<Id<"roomPlayers"> | null>(null);
+  const [studentDisplayName, setStudentDisplayName] = useState<string>('');
+
+  // Convex Mutations & Queries
+  const createRoomMutation = useMutation(api.rooms.createRoom);
+  const joinRoomMutation = useMutation(api.rooms.joinRoom);
+  const startRoomBattleMutation = useMutation(api.rooms.startRoomBattle);
+  const syncPlayerProgressMutation = useMutation(api.rooms.syncPlayerProgress);
+  const finishRoomBattleMutation = useMutation(api.rooms.finishRoomBattle);
+  const submitGlobalScoreMutation = useMutation(api.leaderboard.submitScore);
+
+  // Realtime Live Room Subscription
+  const roomLiveState = useQuery(
+    api.rooms.getRoomLiveState,
+    currentRoomId ? { roomId: currentRoomId } : "skip"
+  );
 
   // Persistent Leaderboard
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(() => {
@@ -85,13 +114,14 @@ export default function App() {
 
   // Battle Countdown Timer
   useEffect(() => {
-    if (gameState !== 'PLAYING' || isPaused || activeDossierPlane !== null || isQuizOpen) return;
+    const isPlaying = appMode === 'SINGLE_PLAYING' || appMode === 'STUDENT_PLAYING';
+    if (!isPlaying || isPaused || activeDossierPlane !== null || isQuizOpen) return;
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          setGameState('DEBRIEF');
+          setAppMode('DEBRIEF');
           return 0;
         }
         return prev - 1;
@@ -101,10 +131,34 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameState, isPaused, activeDossierPlane, isQuizOpen]);
+  }, [appMode, isPaused, activeDossierPlane, isQuizOpen]);
 
-  // Start / Restart Battle
-  const handleStartGame = () => {
+  // Sync Student Progress to Convex Backend in Realtime
+  const syncToConvex = useCallback((recentEventText?: string, isDone = false) => {
+    if (!currentStudentPlayerId) return;
+    const accuracy = shotsFired > 0 ? Math.min(100, Math.round((planesDownedCount / shotsFired) * 100)) : 0;
+    syncPlayerProgressMutation({
+      playerId: currentStudentPlayerId,
+      score,
+      planesDowned: planesDownedCount,
+      accuracy,
+      shotsFired,
+      questionsAnswered,
+      isFinished: isDone,
+      recentEvent: recentEventText,
+    }).catch(() => {});
+  }, [currentStudentPlayerId, score, planesDownedCount, shotsFired, questionsAnswered, syncPlayerProgressMutation]);
+
+  useEffect(() => {
+    if (appMode === 'STUDENT_PLAYING') {
+      syncToConvex();
+    }
+  }, [score, planesDownedCount, shotsFired, questionsAnswered, appMode, syncToConvex]);
+
+  // ═══ HANDLERS ═══
+
+  // 1. Single Player Battle Launch
+  const handleStartSinglePlayer = () => {
     setScore(0);
     setPlanesDownedCount(0);
     setShotsFired(0);
@@ -113,11 +167,52 @@ export default function App() {
     setAmmoFlak(2);
     setTimeRemaining(INITIAL_TIME);
     setElapsedSeconds(0);
-    setGameState('PLAYING');
+    setCurrentRoomId(null);
+    setCurrentRoomCode('');
+    setCurrentStudentPlayerId(null);
+    setAppMode('SINGLE_PLAYING');
     setIsPaused(false);
     setActiveDossierPlane(null);
     setIsQuizOpen(false);
     sound.playAirRaidSiren();
+  };
+
+  // 2. Teacher Creates Kahoot-Style Room
+  const handleCreateHostRoom = async (hostName: string) => {
+    try {
+      const res = await createRoomMutation({ hostName, durationSeconds: 180 });
+      setCurrentRoomId(res.roomId);
+      setCurrentRoomCode(res.code);
+      setAppMode('TEACHER_HOST');
+    } catch (err: any) {
+      alert("Lỗi khi tạo phòng: " + err.message);
+    }
+  };
+
+  // 3. Student Joins Room
+  const handleJoinStudentRoom = async (pin: string, studentName: string) => {
+    try {
+      const res = await joinRoomMutation({ code: pin, playerName: studentName });
+      setCurrentRoomId(res.roomId);
+      setCurrentRoomCode(res.code);
+      setCurrentStudentPlayerId(res.playerId);
+      setStudentDisplayName(res.playerName);
+
+      // Reset stats
+      setScore(0);
+      setPlanesDownedCount(0);
+      setShotsFired(0);
+      setQuestionsAnswered(0);
+      setAmmo37mm(10);
+      setAmmoFlak(2);
+      setTimeRemaining(INITIAL_TIME);
+      setElapsedSeconds(0);
+      setAppMode('STUDENT_PLAYING');
+      setIsPaused(false);
+      sound.playAirRaidSiren();
+    } catch (err: any) {
+      alert("Lỗi khi vào phòng: " + err.message);
+    }
   };
 
   // Consume Ammo Callback
@@ -133,13 +228,16 @@ export default function App() {
     return true;
   };
 
-  // Aircraft Downed Callback -> Triggers Phase 3 Mandatory Dossier!
+  // Aircraft Downed Callback -> Triggers Phase 3 Mandatory Dossier (Strict No-Skip)
   const handlePlaneDowned = (plane: HistoricalPlane) => {
     setPlanesDownedCount((prev) => prev + 1);
-    setActiveDossierPlane(plane); // Pauses gameplay until 5-7s timer finishes
+    setActiveDossierPlane(plane);
+    if (appMode === 'STUDENT_PLAYING') {
+      syncToConvex(`Bắn hạ ${plane.name} (+${plane.baseScore}đ)!`);
+    }
   };
 
-  // Finished reading dossier (Countdown finished & user clicked continue)
+  // Finished reading dossier (6s countdown elapsed)
   const handleFinishedReadingDossier = () => {
     setActiveDossierPlane(null);
   };
@@ -149,6 +247,9 @@ export default function App() {
     setAmmo37mm((prev) => prev + shells37mm);
     setAmmoFlak((prev) => prev + flakBonus);
     setQuestionsAnswered((prev) => prev + 1);
+    if (appMode === 'STUDENT_PLAYING') {
+      syncToConvex(`Đã nạp ${shells37mm} viên đạn pháo 37mm!`);
+    }
   };
 
   // Save Score
@@ -171,32 +272,55 @@ export default function App() {
     const updated = [newEntry, ...leaderboard].sort((a, b) => b.score - a.score).slice(0, 20);
     setLeaderboard(updated);
     localStorage.setItem('dbp_leaderboard', JSON.stringify(updated));
+
+    // Submit to Convex global leaderboard
+    submitGlobalScoreMutation({
+      name,
+      score,
+      planesDowned: planesDownedCount,
+      accuracy,
+      badge,
+      shotsFired,
+      questionsAnswered,
+    }).catch(() => {});
   };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#0d120c] font-sans select-none">
-      {/* ═══ 1. MAIN BATTLE LOBBY / MENU ═══ */}
-      {gameState === 'MENU' && (
-        <div className="relative z-30 w-full h-full flex items-center justify-center p-6 camo-gradient trench-texture">
+      {/* ═══ 1. TEACHER PROJECTOR HOST VIEW (KAHOOT STYLE) ═══ */}
+      {appMode === 'TEACHER_HOST' && currentRoomId && (
+        <TeacherHostView
+          roomCode={currentRoomCode}
+          players={roomLiveState?.players || []}
+          logs={roomLiveState?.logs || []}
+          status={roomLiveState?.room?.status || 'waiting'}
+          durationSeconds={roomLiveState?.room?.durationSeconds || 180}
+          onStartGame={() => startRoomBattleMutation({ roomId: currentRoomId })}
+          onFinishGame={() => finishRoomBattleMutation({ roomId: currentRoomId })}
+          onExit={() => setAppMode('MENU')}
+        />
+      )}
+
+      {/* ═══ 2. MAIN LOBBY / MENU ═══ */}
+      {appMode === 'MENU' && (
+        <div className="relative z-30 w-full h-full flex items-center justify-center p-6 camo-gradient trench-texture overflow-y-auto">
           {/* Decorative Spotlight & Radar Effect */}
           <div className="absolute inset-0 pointer-events-none opacity-20">
             <div className="w-[600px] h-[600px] rounded-full border border-green-500/30 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             <div className="w-[400px] h-[400px] rounded-full border border-green-500/20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-            <div className="w-full h-px bg-green-500/20 absolute top-1/2 left-0" />
-            <div className="w-px h-full bg-green-500/20 absolute top-0 left-1/2" />
           </div>
 
-          <div className="max-w-3xl w-full bg-[#1c2419]/95 border-2 border-[#d4af37] rounded-3xl shadow-2xl p-8 md:p-10 space-y-8 relative backdrop-blur-md">
+          <div className="max-w-3xl w-full bg-[#1c2419]/95 border-2 border-[#d4af37] rounded-3xl shadow-2xl p-8 md:p-10 space-y-8 relative backdrop-blur-md my-auto">
             {/* National Star & Title */}
             <div className="text-center space-y-3">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8b0000] border border-[#ffd700]/50 text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-md shadow-red-950/60">
-                ★ CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 ★
+                ★ CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 · ĐẤU TRƯỜNG PHÒNG KHÔNG ★
               </div>
               <h1 className="text-3xl md:text-5xl font-black font-military text-white tracking-wide leading-tight">
                 PHÁO CAO XẠ PHÒNG KHÔNG
               </h1>
               <p className="text-sm md:text-base text-gray-300 max-w-xl mx-auto leading-relaxed">
-                Khống chế bầu trời Mường Thanh · Cắt đứt cầu hàng không tiếp tế của thực dân Pháp · Ghi danh sử vàng 56 ngày đêm lịch sử
+                Khống chế bầu trời Mường Thanh · Cắt đứt cầu hàng không tiếp tế của thực dân Pháp · Thi đấu thời gian thực theo phòng lớp học kiểu Kahoot
               </p>
             </div>
 
@@ -208,7 +332,7 @@ export default function App() {
                 </div>
                 <h4 className="font-bold text-white text-sm">Giai đoạn 1: Nạp Đạn</h4>
                 <p className="text-gray-400 leading-relaxed">
-                  Trả lời câu hỏi trắc nghiệm lịch sử để nhận đạn pháo cao xạ 37mm và đạn Flak.
+                  Trả lời câu hỏi trắc nghiệm lịch sử để nhận đạn pháo 37mm và đạn Flak.
                 </p>
               </div>
 
@@ -218,7 +342,7 @@ export default function App() {
                 </div>
                 <h4 className="font-bold text-white text-sm">Giai đoạn 2: Bắn Máy Bay</h4>
                 <p className="text-gray-400 leading-relaxed">
-                  Ngắm bắn các máy bay Bearcat, Hellcat, C-47. <strong>Tốc độ máy bay tăng dần theo thời gian</strong>.
+                  Ngắm bắn máy bay Pháp. <strong>Tốc độ máy bay tăng dần theo thời gian</strong>.
                 </p>
               </div>
 
@@ -228,43 +352,43 @@ export default function App() {
                 </div>
                 <h4 className="font-bold text-white text-sm">Giai đoạn 3: Đọc Hồ Sơ</h4>
                 <p className="text-gray-400 leading-relaxed">
-                  Khi hạ máy bay, bắt buộc đọc hồ sơ lịch sử trong <strong>5-7 giây (Không nút Skip)</strong> để ghi nhớ.
+                  Khi hạ máy bay, bắt buộc đọc hồ sơ trong <strong>5-7s (Không nút Skip)</strong>.
                 </p>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <button
-                onClick={handleStartGame}
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-black text-base md:text-lg flex items-center justify-center gap-3 shadow-xl shadow-red-950/60 transition-all cursor-pointer hover:scale-105"
+                onClick={() => setIsMultiplayerModalOpen(true)}
+                className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-2.5 shadow-xl shadow-red-950/60 transition-all cursor-pointer hover:scale-105"
               >
-                <Crosshair className="w-6 h-6 text-[#ffd700]" />
-                XUẤT KÍCH VÀO TRẬN ĐỊA (3 PHÚT)
+                <Users className="w-5 h-5 text-[#ffd700]" />
+                ĐẤU TRƯỜNG PHÒNG LỚP HỌC (KAHOOT)
               </button>
 
               <button
-                onClick={() => setIsMultiplayerOpen(true)}
+                onClick={handleStartSinglePlayer}
                 className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-[#d4af37]/60 text-white font-military font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <Users className="w-5 h-5 text-emerald-400" />
-                ĐẤU TRƯỜNG PHÒNG LỚP HỌC
+                <Crosshair className="w-5 h-5 text-emerald-400" />
+                CHƠI LUYỆN TẬP (3 PHÚT)
               </button>
 
               <button
                 onClick={() => setIsLeaderboardOpen(true)}
-                className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-black/50 hover:bg-black/70 border border-[#d4af37]/60 text-[#ffd700] font-military font-bold text-sm md:text-base flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-5 py-4 rounded-2xl bg-black/50 hover:bg-black/70 border border-white/20 text-[#ffd700] font-military font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Trophy className="w-5 h-5" />
-                BẢNG VÀNG DANH DỰ
+                BẢNG VÀNG
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ═══ 2. PLAYING / CANVAS VIEW ═══ */}
-      {gameState === 'PLAYING' && (
+      {/* ═══ 3. IN-BATTLE CANVAS VIEW (STUDENT OR SINGLE PLAYER) ═══ */}
+      {(appMode === 'SINGLE_PLAYING' || appMode === 'STUDENT_PLAYING') && (
         <div className="w-full h-full relative">
           <Header
             score={score}
@@ -283,7 +407,7 @@ export default function App() {
           {/* Canvas Engine */}
           <div className="w-full h-full pt-16">
             <CanvasGame
-              isPlaying={gameState === 'PLAYING'}
+              isPlaying={appMode === 'SINGLE_PLAYING' || appMode === 'STUDENT_PLAYING'}
               isPaused={isPaused || activeDossierPlane !== null || isQuizOpen}
               ammo37mm={ammo37mm}
               ammoFlak={ammoFlak}
@@ -298,7 +422,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ═══ 3. PHASE 1 QUIZ RELOAD MODAL ═══ */}
+      {/* ═══ 4. PHASE 1 QUIZ RELOAD MODAL ═══ */}
       <QuizModal
         isOpen={isQuizOpen}
         currentAmmo={ammo37mm + ammoFlak}
@@ -306,39 +430,38 @@ export default function App() {
         onCloseToBattle={() => setIsQuizOpen(false)}
       />
 
-      {/* ═══ 4. PHASE 3 MANDATORY HISTORICAL DOSSIER MODAL (NO SKIP) ═══ */}
+      {/* ═══ 5. PHASE 3 MANDATORY HISTORICAL DOSSIER MODAL (STRICT NO-SKIP) ═══ */}
       <PlaneDossierModal
         plane={activeDossierPlane}
         countdownSeconds={6}
         onFinishedReading={handleFinishedReadingDossier}
       />
 
-      {/* ═══ 5. DEBRIEF / VICTORY MODAL ═══ */}
+      {/* ═══ 6. DEBRIEF / VICTORY MODAL ═══ */}
       <VictoryModal
-        isOpen={gameState === 'DEBRIEF'}
+        isOpen={appMode === 'DEBRIEF'}
         score={score}
         planesDownedCount={planesDownedCount}
         shotsFired={shotsFired}
         questionsAnswered={questionsAnswered}
-        onPlayAgain={handleStartGame}
+        onPlayAgain={handleStartSinglePlayer}
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
         onSaveScore={handleSaveScore}
       />
 
-      {/* ═══ 6. LEADERBOARD MODAL ═══ */}
+      {/* ═══ 7. LEADERBOARD MODAL ═══ */}
       <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
         entries={leaderboard}
       />
 
-      {/* ═══ 7. MULTIPLAYER ROOM MODAL ═══ */}
+      {/* ═══ 8. MULTIPLAYER ROOM (TEACHER HOST / STUDENT JOIN) ═══ */}
       <MultiplayerRoomModal
-        isOpen={isMultiplayerOpen}
-        onClose={() => setIsMultiplayerOpen(false)}
-        onStartBattle={(roomCode) => {
-          handleStartGame();
-        }}
+        isOpen={isMultiplayerModalOpen}
+        onClose={() => setIsMultiplayerModalOpen(false)}
+        onCreateHostRoom={handleCreateHostRoom}
+        onJoinStudentRoom={handleJoinStudentRoom}
       />
     </div>
   );

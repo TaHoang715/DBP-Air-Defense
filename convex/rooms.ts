@@ -1,119 +1,210 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// Tạo phòng thi đấu mới
+// 1. Giảng viên / Host tạo phòng thi đấu mới với mã PIN
 export const createRoom = mutation({
   args: {
     hostName: v.string(),
     durationSeconds: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Generate 6-digit uppercase room code (e.g. DBP88)
-    const code = "DBP" + Math.floor(100 + Math.random() * 900);
+    // Generate PIN 6 chữ số dễ nhớ (ví dụ: 195401, 715902...)
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
     const roomId = await ctx.db.insert("rooms", {
-      code,
-      hostName: args.hostName,
+      code: pin,
+      hostName: args.hostName.trim(),
       status: "waiting",
       durationSeconds: args.durationSeconds ?? 180,
     });
 
-    // Add host as first player
-    const playerId = await ctx.db.insert("roomPlayers", {
+    // Tạo bản ghi Host
+    const hostPlayerId = await ctx.db.insert("roomPlayers", {
       roomId,
-      name: args.hostName,
+      name: args.hostName.trim() + " (Giảng Viên)",
       score: 0,
       planesDowned: 0,
       accuracy: 0,
+      shotsFired: 0,
+      questionsAnswered: 0,
       isHost: true,
       isFinished: false,
+      lastEvent: "Đã mở phòng thi đấu",
       lastUpdated: Date.now(),
     });
 
-    return { roomId, code, playerId };
+    await ctx.db.insert("battleLogs", {
+      roomId,
+      playerName: args.hostName.trim(),
+      message: "Đã tạo phòng thi đấu. Đang chờ sinh viên tham gia!",
+      type: "medal",
+      timestamp: Date.now(),
+    });
+
+    return { roomId, code: pin, playerId: hostPlayerId };
   },
 });
 
-// Tham gia phòng thi đấu
+// 2. Sinh viên tham gia phòng bằng Mã PIN
 export const joinRoom = mutation({
   args: {
     code: v.string(),
     playerName: v.string(),
   },
   handler: async (ctx, args) => {
+    const cleanPin = args.code.trim();
     const room = await ctx.db
       .query("rooms")
-      .withIndex("by_code", (q) => q.eq("code", args.code.toUpperCase().trim()))
+      .withIndex("by_code", (q) => q.eq("code", cleanPin))
       .first();
 
     if (!room) {
-      throw new Error("Không tìm thấy phòng thi đấu với mã này!");
+      throw new Error("Không tìm thấy phòng với mã PIN này! Vui lòng kiểm tra lại.");
     }
 
     if (room.status === "finished") {
       throw new Error("Trận đấu trong phòng này đã kết thúc!");
     }
 
+    // Check if player name already exists in this room
+    const existingPlayers = await ctx.db
+      .query("roomPlayers")
+      .withIndex("by_room", (q) => q.eq("roomId", room._id))
+      .collect();
+
+    let finalName = args.playerName.trim();
+    const isDuplicate = existingPlayers.some((p) => p.name.toLowerCase() === finalName.toLowerCase());
+    if (isDuplicate) {
+      finalName = `${finalName} #${existingPlayers.length + 1}`;
+    }
+
     const playerId = await ctx.db.insert("roomPlayers", {
       roomId: room._id,
-      name: args.playerName,
+      name: finalName,
       score: 0,
       planesDowned: 0,
       accuracy: 0,
+      shotsFired: 0,
+      questionsAnswered: 0,
       isHost: false,
       isFinished: false,
+      lastEvent: "Đã tham gia phòng chờ",
       lastUpdated: Date.now(),
     });
 
-    return { roomId: room._id, code: room.code, playerId, room };
+    // Add log
+    await ctx.db.insert("battleLogs", {
+      roomId: room._id,
+      playerName: finalName,
+      message: `${finalName} đã vào trận địa!`,
+      type: "reload",
+      timestamp: Date.now(),
+    });
+
+    return { roomId: room._id, code: room.code, playerId, room, playerName: finalName };
   },
 });
 
-// Lấy thông tin phòng & danh sách người chơi trực tiếp (Realtime subscription)
-export const getRoomData = query({
+// 3. Realtime Subscription: Lấy trạng thái phòng, danh sách bảng điểm và nhật ký
+export const getRoomLiveState = query({
   args: { roomId: v.id("rooms") },
   handler: async (ctx, args) => {
     const room = await ctx.db.get(args.roomId);
     if (!room) return null;
 
+    // Lấy toàn bộ người chơi (trừ host nếu host không bắn)
     const players = await ctx.db
       .query("roomPlayers")
       .withIndex("by_room", (q) => q.eq("roomId", args.roomId))
       .collect();
 
-    // Sort players by score descending
+    // Sắp xếp bảng điểm theo điểm số giảm dần
     players.sort((a, b) => b.score - a.score);
 
-    return { room, players };
+    // Lấy 15 nhật ký chiến sự mới nhất
+    const logs = await ctx.db
+      .query("battleLogs")
+      .withIndex("by_room_time", (q) => q.eq("roomId", args.roomId))
+      .order("desc")
+      .take(15);
+
+    return { room, players, logs };
   },
 });
 
-// Host bắt đầu trận đấu
-export const startRoomGame = mutation({
+// 4. Giảng viên bấm Bắt đầu trận đấu (Đồng bộ tất cả màn hình)
+export const startRoomBattle = mutation({
   args: { roomId: v.id("rooms") },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.roomId, {
       status: "playing",
       startedAt: Date.now(),
     });
+
+    await ctx.db.insert("battleLogs", {
+      roomId: args.roomId,
+      playerName: "CHỈ HUY TRƯỞNG",
+      message: "LỆNH TỔNG CÔNG KÍCH! TOÀN BỘ PHÁO CAO XẠ 37MM KHAI HỎA!",
+      type: "medal",
+      timestamp: Date.now(),
+    });
   },
 });
 
-// Cập nhật điểm số người chơi trong trận
-export const updatePlayerStats = mutation({
+// 5. Sinh viên cập nhật điểm số & thành tích trực tiếp (Realtime Sync)
+export const syncPlayerProgress = mutation({
   args: {
     playerId: v.id("roomPlayers"),
     score: v.number(),
     planesDowned: v.number(),
     accuracy: v.number(),
+    shotsFired: v.number(),
+    questionsAnswered: v.number(),
     isFinished: v.optional(v.boolean()),
+    recentEvent: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const player = await ctx.db.get(args.playerId);
+    if (!player) return;
+
     await ctx.db.patch(args.playerId, {
       score: args.score,
       planesDowned: args.planesDowned,
       accuracy: args.accuracy,
+      shotsFired: args.shotsFired,
+      questionsAnswered: args.questionsAnswered,
       isFinished: args.isFinished ?? false,
+      lastEvent: args.recentEvent ?? player.lastEvent,
       lastUpdated: Date.now(),
+    });
+
+    // Nếu có sự kiện bắn hạ máy bay thì đẩy vào Battle Log
+    if (args.recentEvent && args.recentEvent.includes("Bắn hạ")) {
+      await ctx.db.insert("battleLogs", {
+        roomId: player.roomId,
+        playerName: player.name,
+        message: `${player.name} ${args.recentEvent}`,
+        type: "kill",
+        timestamp: Date.now(),
+      });
+    }
+  },
+});
+
+// 6. Giảng viên kết thúc trận đấu
+export const finishRoomBattle = mutation({
+  args: { roomId: v.id("rooms") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.roomId, {
+      status: "finished",
+      finishedAt: Date.now(),
+    });
+
+    await ctx.db.insert("battleLogs", {
+      roomId: args.roomId,
+      playerName: "HỆ THỐNG",
+      message: "HẾT GIỜ! TOÀN THẮNG CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954!",
+      type: "medal",
+      timestamp: Date.now(),
     });
   },
 });
