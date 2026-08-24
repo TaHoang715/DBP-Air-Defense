@@ -9,6 +9,7 @@ import { PlaneDossierModal } from './components/PlaneDossierModal';
 import { VictoryModal } from './components/VictoryModal';
 import { LeaderboardModal } from './components/LeaderboardModal';
 import { TeacherHostView } from './components/TeacherHostView';
+import { RulesModal } from './components/RulesModal';
 import type { LeaderboardEntry } from './components/LeaderboardModal';
 import type { HistoricalPlane } from './data/planesData';
 import { sound } from './audio/SoundEngine';
@@ -25,9 +26,9 @@ import {
   LogIn,
   Shield,
   Sparkles,
-  ArrowRight,
-  CheckCircle2,
-  AlertCircle
+  ScrollText,
+  AlertCircle,
+  X
 } from 'lucide-react';
 
 const INITIAL_TIME = 180; // 3 minutes battle session
@@ -82,6 +83,7 @@ export default function App() {
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [activeDossierPlane, setActiveDossierPlane] = useState<HistoricalPlane | null>(null);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
+  const [isRulesOpen, setIsRulesOpen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Admin / Host Login State
@@ -178,8 +180,8 @@ export default function App() {
     e.preventDefault();
     setAdminError('');
 
-    if (adminPassword.trim() !== 'Admin@123') {
-      setAdminError('Mật khẩu quản trò không chính xác! (Gợi ý: Admin@123)');
+    if (adminPassword !== 'Admin@123') {
+      setAdminError('Mật khẩu quản trò không chính xác! Vui lòng thử lại.');
       return;
     }
 
@@ -341,11 +343,20 @@ export default function App() {
       {/* ═══ 2. GIAO DIỆN TRANG CHỦ CHÍNH: 2 KHUNG RÕ RÀNG (QUẢN TRÒ & NGƯỜI CHƠI) ═══ */}
       {appMode === 'MENU' && (
         <div className="relative z-30 w-full h-full flex flex-col justify-between p-6 sm:p-10 camo-gradient trench-texture overflow-y-auto">
-          {/* Top Title Banner */}
-          <div className="text-center space-y-2 max-w-4xl mx-auto pt-2">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8b0000] border border-[#ffd700]/60 text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-950/60">
-              ★ CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 · ĐẤU TRƯỜNG PHÒNG KHÔNG ★
+          {/* Top Title Banner & Rules Button */}
+          <div className="text-center space-y-3 max-w-4xl mx-auto pt-2">
+            <div className="flex items-center justify-center gap-3">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8b0000] border border-[#ffd700]/60 text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-950/60">
+                ★ CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 · ĐẤU TRƯỜNG PHÒNG KHÔNG ★
+              </div>
+              <button
+                onClick={() => setIsRulesOpen(true)}
+                className="px-3.5 py-1.5 rounded-full bg-[#2d3b27] hover:bg-[#3a4b32] border border-[#ffd700]/50 text-[#ffd700] font-military font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              >
+                <ScrollText className="w-3.5 h-3.5" /> LUẬT CHƠI
+              </button>
             </div>
+
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-military text-white tracking-wide">
               PHÁO CAO XẠ 37MM BẮN MÁY BAY
             </h1>
@@ -372,27 +383,19 @@ export default function App() {
 
                 <div>
                   <h2 className="text-2xl font-black font-military text-white">
-                    1. QUẢN TRÒ (HOST)
+                    1. QUẢN TRÒ
                   </h2>
                   <p className="text-xs text-gray-300 font-military mt-1 leading-relaxed">
                     Dành cho Giảng viên / Người điều hành lớp học. Tạo phòng thi đấu, phát mã PIN cho cả lớp, theo dõi Bảng điểm Live và Bục vinh danh Top 3.
                   </p>
                 </div>
-
-                <div className="p-3.5 bg-black/30 rounded-2xl border border-white/5 space-y-1.5 text-xs text-gray-300 font-military">
-                  <div className="flex items-center gap-2 text-[#ffd700] font-bold">
-                    <Sparkles className="w-3.5 h-3.5" /> Yêu cầu đăng nhập quản trò:
-                  </div>
-                  <p className="text-[11px] text-gray-400">
-                    Tài khoản tùy ý · Mật khẩu xác thực cố định: <span className="text-yellow-400 font-mono font-bold">Admin@123</span>
-                  </p>
-                </div>
               </div>
 
-              <div className="pt-6 relative z-10">
+              <div className="pt-8 relative z-10">
                 <button
                   onClick={() => {
                     setAdminError('');
+                    setAdminPassword('');
                     setShowAdminLoginModal(true);
                   }}
                   className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-3 shadow-xl shadow-red-950/80 transition-all cursor-pointer hover:scale-[1.02]"
@@ -430,13 +433,13 @@ export default function App() {
                 <form onSubmit={handleStudentJoinSubmit} className="space-y-3 pt-1">
                   <div>
                     <label className="block text-[11px] font-military text-gray-300 mb-1">
-                      Mã PIN Phòng (6 số trên máy chiếu):
+                      Mã PIN Phòng:
                     </label>
                     <input
                       type="text"
                       value={studentPin}
                       onChange={(e) => setStudentPin(e.target.value)}
-                      placeholder="Ví dụ: 195401 hoặc DBP123"
+                      placeholder="Nhập mã PIN"
                       maxLength={10}
                       className="w-full bg-black/60 border border-white/20 rounded-xl px-4 py-2.5 text-sm font-mono uppercase text-yellow-400 placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
                     />
@@ -444,13 +447,13 @@ export default function App() {
 
                   <div>
                     <label className="block text-[11px] font-military text-gray-300 mb-1">
-                      Họ & Tên Sinh Viên / Chiến Sĩ:
+                      Họ & Tên Sinh Viên:
                     </label>
                     <input
                       type="text"
                       value={studentName}
                       onChange={(e) => setStudentName(e.target.value)}
-                      placeholder="Ví dụ: Nguyễn Văn A - Nhóm 1"
+                      placeholder="Nhập họ và tên"
                       className="w-full bg-black/60 border border-white/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-military text-white placeholder:text-gray-600 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
@@ -464,7 +467,7 @@ export default function App() {
 
                   <button
                     type="submit"
-                    className="w-full py-4 mt-2 rounded-2xl bg-[#44563a] hover:bg-[#556b2f] text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-3 shadow-xl shadow-green-950/50 transition-all cursor-pointer hover:scale-[1.02]"
+                    className="w-full py-3.5 mt-1 rounded-2xl bg-[#44563a] hover:bg-[#556b2f] text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-3 shadow-xl shadow-green-950/50 transition-all cursor-pointer hover:scale-[1.02]"
                   >
                     <LogIn className="w-5 h-5 text-emerald-300" />
                     VÀO TRẬN ĐỊA THI ĐẤU
@@ -476,6 +479,14 @@ export default function App() {
 
           {/* Bottom Bar: Solo Practice & Leaderboard */}
           <div className="max-w-4xl w-full mx-auto flex flex-wrap items-center justify-center gap-4 text-xs font-military pt-2 pb-2">
+            <button
+              onClick={() => setIsRulesOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-gray-300 hover:text-[#ffd700] flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <ScrollText className="w-4 h-4 text-[#ffd700]" />
+              Luật Chơi
+            </button>
+
             <button
               onClick={handleStartSoloGame}
               className="px-5 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-gray-300 hover:text-white flex items-center gap-2 transition-all cursor-pointer"
@@ -489,26 +500,33 @@ export default function App() {
               className="px-5 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/15 text-gray-300 hover:text-[#ffd700] flex items-center gap-2 transition-all cursor-pointer"
             >
               <Trophy className="w-4 h-4 text-[#ffd700]" />
-              Bảng Vàng Danh Dự Toàn Cầu
+              Bảng Vàng Danh Dự
             </button>
           </div>
         </div>
       )}
 
-      {/* ═══ 3. MODAL ĐĂNG NHẬP QUẢN TRÒ (MẬT KHẨU CỐ ĐỊNH Admin@123) ═══ */}
+      {/* ═══ 3. MODAL ĐĂNG NHẬP QUẢN TRÒ ═══ */}
       {showAdminLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="w-full max-w-md bg-[#1c2419] border-2 border-[#ffd700] rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 text-[#f7f6f2]">
+          <div className="w-full max-w-md bg-[#1c2419] border-2 border-[#ffd700] rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 text-[#f7f6f2] relative">
+            <button
+              onClick={() => setShowAdminLoginModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-xl bg-black/30 hover:bg-black/50 text-gray-300 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
             {/* Header */}
             <div className="text-center space-y-2">
               <div className="w-14 h-14 rounded-2xl bg-[#8b0000] text-[#ffd700] flex items-center justify-center mx-auto shadow-lg shadow-red-950/60 font-bold">
-                <Lock className="w-7 h-7" />
+                <Crown className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-black font-military text-white">
-                XÁC THỰC QUẢN TRÒ (GIẢNG VIÊN)
+                XÁC THỰC QUẢN TRÒ
               </h3>
               <p className="text-xs text-gray-300">
-                Đăng nhập để khởi tạo phòng thi đấu và trình chiếu máy chiếu
+                Đăng nhập để khởi tạo phòng thi đấu máy chiếu
               </p>
             </div>
 
@@ -516,13 +534,13 @@ export default function App() {
             <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
               <div className="space-y-1">
                 <label className="block text-xs font-military text-gray-300">
-                  Tên Tài Khoản / Tên Chỉ Huy (Tùy ý):
+                  Tên Quản Trò / Giảng Viên:
                 </label>
                 <input
                   type="text"
                   value={adminUsername}
                   onChange={(e) => setAdminUsername(e.target.value)}
-                  placeholder="Ví dụ: Thầy Hoàng / Admin"
+                  placeholder="Nhập tên quản trò"
                   required
                   className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-military text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ffd700]"
                 />
@@ -530,13 +548,13 @@ export default function App() {
 
               <div className="space-y-1">
                 <label className="block text-xs font-military text-gray-300">
-                  Mật Khẩu Quản Trò (Cố định):
+                  Mật Khẩu Quản Trò:
                 </label>
                 <input
                   type="password"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu (Admin@123)"
+                  placeholder="Nhập mật khẩu"
                   required
                   className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ffd700]"
                 />
@@ -576,7 +594,7 @@ export default function App() {
                   type="submit"
                   className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-bold text-xs shadow-lg shadow-red-950/60 cursor-pointer"
                 >
-                  ĐĂNG NHẬP & TẠO PHÒNG
+                  TẠO PHÒNG
                 </button>
               </div>
             </form>
@@ -651,6 +669,12 @@ export default function App() {
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
         entries={leaderboard}
+      />
+
+      {/* ═══ 9. RULES MODAL ═══ */}
+      <RulesModal
+        isOpen={isRulesOpen}
+        onClose={() => setIsRulesOpen(false)}
       />
     </div>
   );
