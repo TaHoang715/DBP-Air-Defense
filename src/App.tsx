@@ -10,6 +10,7 @@ import { VictoryModal } from './components/VictoryModal';
 import { TeacherHostView } from './components/TeacherHostView';
 import { StudentWaitingLobby } from './components/StudentWaitingLobby';
 import { RulesModal } from './components/RulesModal';
+import { WordGuessGame } from './components/WordGuessGame';
 import type { HistoricalPlane } from './data/planesData';
 import { sound } from './audio/SoundEngine';
 import {
@@ -21,7 +22,15 @@ import {
   AlertCircle,
   X,
   Clock,
-  Sliders
+  Sliders,
+  Gamepad2,
+  Sparkles,
+  ArrowLeft,
+  Flame,
+  Star,
+  BookOpen,
+  Award,
+  Play
 } from 'lucide-react';
 
 const INITIAL_TIME = 300; // 5 minutes default battle session
@@ -42,7 +51,21 @@ const parseCleanErrorMessage = (err: any): string => {
 };
 
 export default function App() {
-  // Game Mode: 'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'
+  // Selected Game: 'HUB' | 'AIR_DEFENSE_1972' | 'WORD_GUESS_1945'
+  const [activeGame, setActiveGame] = useState<'HUB' | 'AIR_DEFENSE_1972' | 'WORD_GUESS_1945'>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('code') || params.get('room')) {
+        return 'AIR_DEFENSE_1972'; // If user scanned QR code for multiplayer room, jump directly into Air Defense game
+      }
+      if (params.get('game') === 'wordguess' || params.get('game') === 'doanchu') {
+        return 'WORD_GUESS_1945';
+      }
+    } catch {}
+    return 'HUB';
+  });
+
+  // Game Mode for Air Defense: 'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'
   const [appMode, setAppMode] = useState<'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'>('MENU');
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [timeRemaining, setTimeRemaining] = useState<number>(INITIAL_TIME);
@@ -308,6 +331,156 @@ export default function App() {
     setAppMode('MENU');
   };
 
+  // ══════════════════════════════════════════════════════════════════════
+  // VIEW 1: TRÒ CHƠI NHÌN HÌNH ĐOÁN CHỮ (1945 - 1946)
+  // ══════════════════════════════════════════════════════════════════════
+  if (activeGame === 'WORD_GUESS_1945') {
+    return <WordGuessGame onBackToHub={() => setActiveGame('HUB')} />;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // VIEW 2: TRUNG TÂM CHỌN TRÒ CHƠI (GAME SELECTION HUB)
+  // ══════════════════════════════════════════════════════════════════════
+  if (activeGame === 'HUB') {
+    return (
+      <div className="relative min-h-screen w-full bg-[#0a0f08] text-[#f7f6f2] font-sans camo-gradient trench-texture flex flex-col justify-between p-4 sm:p-8 overflow-x-hidden selection:bg-red-700 selection:text-white">
+        {/* Hub Header */}
+        <header className="max-w-6xl w-full mx-auto text-center space-y-3 pt-4 sm:pt-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8b0000] border border-[#ffd700]/60 text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-950/60">
+            ★ TRUNG TÂM ĐẤU TRƯỜNG LỊCH SỬ VIỆT NAM ★
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-military text-white tracking-wide uppercase drop-shadow-md">
+            HỆ THỐNG TRÒ CHƠI GIÁO DỤC LỊCH SỬ
+          </h1>
+
+          <p className="text-xs sm:text-sm text-gray-300 font-military max-w-2xl mx-auto leading-relaxed">
+            Phần mềm tương tác học tập & thi đấu trực tiếp trên giảng đường. Vui lòng chọn trò chơi bạn muốn bắt đầu:
+          </p>
+        </header>
+
+        {/* 2 Big Interactive Game Cards */}
+        <main className="max-w-5xl w-full mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 my-6 items-stretch">
+          {/* 🎯 CARD 1: PHÒNG KHÔNG ĐIỆN BIÊN PHỦ 1972 */}
+          <div className="bg-[#1c2419]/95 border-2 border-[#ffd700]/80 hover:border-[#ffd700] rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl backdrop-blur-md relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] hover:shadow-red-950/50">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-[#8b0000]/25 rounded-full blur-3xl -z-0 pointer-events-none" />
+
+            <div className="space-y-4 relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-2xl bg-[#8b0000] border border-[#ffd700]/60 flex items-center justify-center text-[#ffd700] shadow-lg shadow-red-950/60 font-bold">
+                  <Flame className="w-8 h-8 text-yellow-400" />
+                </div>
+                <span className="px-3 py-1 bg-[#8b0000]/50 border border-[#ffd700]/50 text-[#ffd700] font-military font-bold text-xs rounded-full">
+                  TRÒ CHƠI SỐ 01
+                </span>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-black font-military text-white tracking-wide">
+                  PHÒNG KHÔNG ĐIỆN BIÊN PHỦ (1972)
+                </h2>
+                <p className="text-xs text-[#ffd700] font-military font-bold mt-0.5">
+                  12 Ngày Đêm Đánh Bại B-52 · Thi Đấu Lớp Học Thời Gian Thực
+                </p>
+                <p className="text-xs text-gray-300 font-military mt-2 leading-relaxed text-justify">
+                  Trận địa pháo cao xạ 37mm và đạn nổ tầm cao tiêu diệt 19 chủng loại máy bay Mỹ. Nạp đạn bằng 50 câu hỏi trắc nghiệm lịch sử, chế độ Máy chiếu Giảng viên + Học sinh quét QR thi đấu trực tiếp.
+                </p>
+              </div>
+
+              {/* Feature Highlights */}
+              <div className="space-y-1.5 pt-2 border-t border-white/10 text-xs font-military text-gray-200">
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                  <span>Máy chiếu Giảng viên + Toàn lớp tham chiến bằng PIN/QR</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                  <span>Xoay vòng 50 câu hỏi trắc nghiệm chính thống</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                  <span>Hồ sơ 19 mẫu máy bay & Bục vinh danh Top 3</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 relative z-10">
+              <button
+                onClick={() => setActiveGame('AIR_DEFENSE_1972')}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-3 shadow-xl shadow-red-950/80 transition-all cursor-pointer hover:scale-[1.02]"
+              >
+                <Play className="w-5 h-5 fill-white text-white" />
+                <span>CHƠI GAME PHÒNG KHÔNG 1972</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 🧩 CARD 2: NHÌN HÌNH ĐOÁN CHỮ (1945 - 1946) */}
+          <div className="bg-[#1c2419]/95 border-2 border-emerald-500/80 hover:border-emerald-400 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl backdrop-blur-md relative overflow-hidden group transition-all duration-300 hover:scale-[1.02] hover:shadow-emerald-950/50">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl -z-0 pointer-events-none" />
+
+            <div className="space-y-4 relative z-10">
+              <div className="flex items-center justify-between">
+                <div className="w-14 h-14 rounded-2xl bg-[#2d3b27] border border-emerald-500/50 flex items-center justify-center text-emerald-400 shadow-lg font-bold">
+                  <Sparkles className="w-8 h-8 text-emerald-400" />
+                </div>
+                <span className="px-3 py-1 bg-emerald-950/60 border border-emerald-500/60 text-emerald-300 font-military font-bold text-xs rounded-full">
+                  TRÒ CHƠI SỐ 02
+                </span>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-black font-military text-white tracking-wide">
+                  NHÌN HÌNH ĐOÁN CHỮ (1945 - 1946)
+                </h2>
+                <p className="text-xs text-emerald-400 font-military font-bold mt-0.5">
+                  Lịch Sử Đảng Cộng Sản Việt Nam · 16 Câu Hỏi Ô Chữ & Tư Liệu
+                </p>
+                <p className="text-xs text-gray-300 font-military mt-2 leading-relaxed text-justify">
+                  Đấu trường giải mã ô chữ 16 sự kiện, phong trào và văn kiện lịch sử hào hùng (Diệt giặc đói, Tuần lễ vàng, Quỹ độc lập, Hiệp định Sơ bộ, Tạm ước Việt Pháp, Vụ án Ôn Như Hầu,...).
+                </p>
+              </div>
+
+              {/* Feature Highlights */}
+              <div className="space-y-1.5 pt-2 border-t border-white/10 text-xs font-military text-gray-200">
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>16 Bộ câu hỏi ô chữ, hình ảnh & gợi ý lịch sử chuẩn xác</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Đếm ngược 60s, mở từng ký tự hoặc mở trọn đáp án</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Tư liệu lịch sử chi tiết cho từng phong trào & sự kiện</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 relative z-10">
+              <button
+                onClick={() => setActiveGame('WORD_GUESS_1945')}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-military font-black text-sm md:text-base flex items-center justify-center gap-3 shadow-xl shadow-emerald-950/80 transition-all cursor-pointer hover:scale-[1.02]"
+              >
+                <Play className="w-5 h-5 fill-white text-white" />
+                <span>CHƠI ĐOÁN CHỮ LỊCH SỬ ĐẢNG</span>
+              </button>
+            </div>
+          </div>
+        </main>
+
+        {/* Hub Footer */}
+        <footer className="max-w-5xl w-full mx-auto text-center text-[11px] text-gray-400 font-military pt-2 pb-1 border-t border-white/10">
+          <span>Hệ Thống Trò Chơi Lịch Sử Phục Vụ Giảng Dạy & Thuyết Trình Sinh Viên</span>
+        </footer>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // VIEW 3: TRÒ CHƠI PHÒNG KHÔNG ĐIỆN BIÊN PHỦ (1972)
+  // ══════════════════════════════════════════════════════════════════════
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#0a0f08] text-[#f7f6f2] font-sans select-none">
       {/* ═══ 1. MÀN HÌNH MÁY CHIẾU CỦA QUẢN TRÒ / GIẢNG VIÊN ═══ */}
@@ -343,8 +516,14 @@ export default function App() {
           {/* Top Title Banner & Rules Button */}
           <div className="text-center space-y-3 max-w-3xl w-full mb-8">
             <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setActiveGame('HUB')}
+                className="px-3.5 py-1.5 rounded-full bg-black/50 hover:bg-black/80 border border-yellow-500/40 text-yellow-300 font-military font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md hover:scale-105"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> CHỌN GAME KHÁC
+              </button>
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#8b0000] border border-[#ffd700]/60 text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-950/60">
-                ★ CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 ★
+                ★ ĐIỆN BIÊN PHỦ TRÊN KHÔNG 1972 ★
               </div>
               <button
                 onClick={() => setIsRulesOpen(true)}
