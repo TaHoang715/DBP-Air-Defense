@@ -1,20 +1,21 @@
-// Historical French Aircraft Shot Down during Dien Bien Phu Campaign (13/03/1954 - 07/05/1954)
+// 19 Official Historical Aircraft Models Shot Down during Operation Linebacker II (18/12 - 30/12/1972)
+// "Dien Bien Phu on the Air" - 12 Days and Nights Historical Dossier
 
 export interface HistoricalPlane {
   id: string;
   name: string;
   code: string;
-  frenchUnit: string;
-  role: string;
-  shotDownTime: string;
-  shotDownDate: string;
-  shotDownLocation: string;
-  creditedUnit: string;
-  historicalContext: string;
+  serialNumber?: string; // Số hiệu máy bay (nếu có)
+  role: string; // Vai trò / Sức công phá
+  shotDownDate: string; // Ngày bị bắn rơi
+  creditedUnit: string; // Đơn vị lập công
+  historicalContext: string; // Tư liệu lịch sử & diễn biến chiến công
+  aircraftType: 'B52' | 'JET_FIGHTER' | 'SWING_WING' | 'ATTACK_BOMBER' | 'RECON' | 'HELICOPTER' | 'DRONE';
   specs: {
     origin: string;
     maxSpeed: string;
     wingspan: string;
+    bombLoad: string; // Tải trọng bom
     armament: string;
   };
   baseScore: number;
@@ -29,220 +30,545 @@ export interface HistoricalPlane {
 }
 
 export const HISTORICAL_PLANES: HistoricalPlane[] = [
+  // ═══ 1. B-52G (Số hiệu: 58-0201) — 18/12/1972 ═══
   {
-    id: 'morane_ms500_01',
-    name: 'Morane-Saulnier MS.500 Criquet',
-    code: 'MS-500 "Cò Lửa"',
-    frenchUnit: 'Biệt đội Quan sát Pháo binh GAOA 4',
-    role: 'Máy bay trinh sát & chỉ điểm pháo binh',
-    shotDownTime: '17:30',
-    shotDownDate: '13/03/1954 (Ngày mở màn chiến dịch)',
-    shotDownLocation: 'Khu vực Đồi Him Lam (Phân khu Bắc)',
-    creditedUnit: 'Đại đội 815, Tiểu đoàn 383, Trung đoàn Pháo cao xạ 367',
-    historicalContext: 'Chiếc máy bay đầu tiên của quân Pháp bị pháo cao xạ 37mm Việt Nam bắn rơi ngay trong ngày mở màn đợt tiến công tiêu diệt cứ điểm Him Lam, tước đoạt "mắt thần" chỉ điểm của pháo binh Pháp.',
+    id: 'b52g_58_0201',
+    name: 'Boeing B-52G Stratofortress',
+    code: 'B-52G "Pháo Đài Bay"',
+    serialNumber: '58-0201',
+    role: 'Máy bay ném bom chiến lược — mang ~9–13 tấn bom (27 quả)',
+    shotDownDate: '18/12/1972 (Đêm mở màn chiến dịch)',
+    creditedUnit: 'Tiểu đoàn 59, Trung đoàn tên lửa 261 (SAM-2)',
+    historicalContext: 'Đêm 18/12/1972, Tiểu đoàn 59 (Trung đoàn 261) đã phóng tên lửa SAM-2 bắn rơi tại chỗ chiếc pháo đài bay B-52G đầu tiên của không quân chiến lược Mỹ trên cánh đồng Chuôm (Phù Lỗ, Sóc Sơn), mở màn cho chuỗi chiến thắng lẫy lừng của chiến dịch.',
+    aircraftType: 'B52',
     specs: {
-      origin: 'Pháp / Đức chế tạo',
-      maxSpeed: '175 km/h',
-      wingspan: '14.25 m',
-      armament: '1 súng máy MG-15 7.92mm, thiết bị vô tuyến định vị'
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h (Mach 0.86)',
+      wingspan: '56.4 m',
+      bombLoad: '~9–13 tấn bom (27 quả bom 340kg/450kg)',
+      armament: '8 động cơ phản lực Pratt & Whitney J57, tháp pháo đuôi 4 súng máy 12.7mm M3'
     },
-    baseScore: 100,
-    baseHp: 1,
-    baseSpeed: 1.6,
-    colorScheme: {
-      body: '#8b8378',
-      wing: '#6e675f',
-      cockpit: '#87ceeb',
-      stripe: '#002654'
-    }
-  },
-  {
-    id: 'f8f_bearcat_01',
-    name: 'Grumman F8F-1 Bearcat',
-    code: 'F8F "Mèo Hoang" No.122',
-    frenchUnit: 'Không đoàn Tiêm kích GC 1/22 Saintonge',
-    role: 'Tiêm kích đánh chặn & ném bom bổ nhào',
-    shotDownTime: '09:15',
-    shotDownDate: '15/03/1954 (Đợt 1 chiến dịch)',
-    shotDownLocation: 'Thung lũng Mường Thanh (gần Độc Lập)',
-    creditedUnit: 'Đại đội 816, Tiểu đoàn 383, Trung đoàn Pháo cao xạ 367',
-    historicalContext: 'F8F Bearcat là tiêm kích hiện đại bậc nhất của Pháp do Mỹ viện trợ. Chiếc Bearcat này đang bổ nhào ném bom napalm vào trận địa pháo ta thì bị lưới lửa cao xạ 37mm đón đầu bắn gãy cánh bốc cháy dữ dội.',
-    specs: {
-      origin: 'Hoa Kỳ (Grumman)',
-      maxSpeed: '732 km/h',
-      wingspan: '10.92 m',
-      armament: '4 pháo 20mm M3, 4 rocket HVAR, 2 bom 450kg hoặc bom Napalm'
-    },
-    baseScore: 250,
-    baseHp: 2,
-    baseSpeed: 2.5,
-    colorScheme: {
-      body: '#1b365d',
-      wing: '#122642',
-      cockpit: '#6ba4b8',
-      stripe: '#ed2939'
-    }
-  },
-  {
-    id: 'c47_dakota_01',
-    name: 'Douglas C-47 Skytrain / Dakota',
-    code: 'C-47 "Ngựa Thồ Hàng Không"',
-    frenchUnit: 'Không đoàn Vận tải GT 2/62 Franche-Comté',
-    role: 'Vận tải quân sự & thả dù tiếp tế',
-    shotDownTime: '11:45',
-    shotDownDate: '17/03/1954',
-    shotDownLocation: 'Không phận Sân bay Mường Thanh',
-    creditedUnit: 'Tiểu đoàn 381, Trung đoàn Pháo cao xạ 367',
-    historicalContext: 'C-47 là huyết mạch duy nhất tiếp tế đạn dược, lương thực cho tập đoàn cứ điểm Điện Biên Phủ. Pháo cao xạ ta áp sát khống chế độ cao khiến máy bay Pháp buộc phải thả dù từ trên 3.000m, phần lớn dù tiếp tế rơi sang trận địa ta.',
-    specs: {
-      origin: 'Hoa Kỳ (Douglas Aircraft)',
-      maxSpeed: '360 km/h',
-      wingspan: '29.11 m',
-      armament: 'Chở 28 lính dù hoặc 3 tấn đạn dược, lương thực'
-    },
-    baseScore: 200,
-    baseHp: 3,
+    baseScore: 500,
+    baseHp: 4,
     baseSpeed: 1.4,
     colorScheme: {
-      body: '#556b2f',
-      wing: '#3f5223',
-      cockpit: '#b0e0e6',
-      stripe: '#ffffff'
+      body: '#2b303a',
+      wing: '#1e2229',
+      cockpit: '#4cc9f0',
+      stripe: '#e63946'
     }
   },
+
+  // ═══ 2. B-52D (Số hiệu: 56-0608) — 19/12/1972 ═══
   {
-    id: 'f6f_hellcat_01',
-    name: 'Grumman F6F-5 Hellcat',
-    code: 'F6F-5 Hellcat',
-    frenchUnit: 'Hải đội 11F (Tàu sân bay Arromanches)',
-    role: 'Tiêm kích hạm đội oanh tạc đường không',
-    shotDownTime: '14:20',
-    shotDownDate: '22/03/1954',
-    shotDownLocation: 'Dãy đồi phía Đông (Đồi C1 - D1)',
-    creditedUnit: 'Đại đội pháo cao xạ 828, Đại đoàn 308 phối thuộc',
-    historicalContext: 'Máy bay xuất kích từ tàu sân bay Arromanches ở Vịnh Bắc Bộ bay lên chi viện cho De Castries, bị hỏa lực súng máy phòng không 12.7mm và pháo 37mm đan chéo bắn rơi tại chỗ.',
+    id: 'b52d_56_0608',
+    name: 'Boeing B-52D Stratofortress (Big Belly)',
+    code: 'B-52D "Khoang Bom Lớn"',
+    serialNumber: '56-0608',
+    role: 'Máy bay ném bom chiến lược — mang ~27–30 tấn bom (108 quả)',
+    shotDownDate: '19/12/1972 (Đêm thứ hai)',
+    creditedUnit: 'Tiểu đoàn 77, Trung đoàn tên lửa 257 (SAM-2)',
+    historicalContext: 'B-52D được Mỹ nâng cấp khoang bom phình to (Big Belly) mang tới 108 quả bom hủy diệt. Đêm 19/12/1972, Tiểu đoàn 77 (Trung đoàn 257) đã dùng phương pháp phát sóng bám sát mục tiêu chính xác trong dải nhiễu nặng, phóng đạn tiêu diệt hoàn toàn chiếc B-52D này.',
+    aircraftType: 'B52',
     specs: {
-      origin: 'Hoa Kỳ (Grumman)',
-      maxSpeed: '621 km/h',
-      wingspan: '13.06 m',
-      armament: '6 súng máy Browning M2 12.7mm, 2 bom 450kg'
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~27–30 tấn bom (108 quả bom gồm 84 quả trong khoang + 24 quả ngoài cánh)',
+      armament: '8 động cơ tuabin phản lực J57-P-29W, 4 súng máy đuôi 12.7mm radar dẫn bắn'
     },
-    baseScore: 280,
-    baseHp: 2,
-    baseSpeed: 2.3,
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
+    colorScheme: {
+      body: '#1f2421',
+      wing: '#141815',
+      cockpit: '#00f5d4',
+      stripe: '#ffd166'
+    }
+  },
+
+  // ═══ 3. B-52D (Số hiệu: 56-0622) — 20/12/1972 ═══
+  {
+    id: 'b52d_56_0622',
+    name: 'Boeing B-52D Stratofortress',
+    code: 'B-52D #56-0622',
+    serialNumber: '56-0622',
+    role: 'Máy bay ném bom chiến lược — mang ~27–30 tấn bom (108 quả)',
+    shotDownDate: '20/12/1972 (Đêm thứ ba)',
+    creditedUnit: 'Tiểu đoàn 57, 77, 79 (phối hợp bắn rơi 4 chiếc trong 9 phút)',
+    historicalContext: 'Đêm 20 rạng sáng 21/12/1972 đi vào lịch sử phòng không thế giới khi các Tiểu đoàn tên lửa 57, 77, 79 hiệp đồng xuất quỷ nhập thần, bắn rơi liên tiếp 4 pháo đài bay B-52 chỉ trong vòng 9 phút, bẻ gãy hoàn toàn đợt tập kích quy mô lớn của địch.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~27–30 tấn bom (108 quả)',
+      armament: 'Hệ thống tác chiến điện tử ECM công suất cực mạnh, tháp pháo đuôi 12.7mm'
+    },
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
+    colorScheme: {
+      body: '#2d3142',
+      wing: '#1f222e',
+      cockpit: '#4cc9f0',
+      stripe: '#ef233c'
+    }
+  },
+
+  // ═══ 4. B-52G (Số hiệu: 57-6469) — 20/12/1972 ═══
+  {
+    id: 'b52g_57_6469',
+    name: 'Boeing B-52G Stratofortress',
+    code: 'B-52G #57-6469',
+    serialNumber: '57-6469',
+    role: 'Máy bay ném bom chiến lược — mang ~9–13 tấn bom (27 quả)',
+    shotDownDate: '20/12/1972 (Đêm thứ ba)',
+    creditedUnit: 'Tiểu đoàn 57, 77, 79 (phối hợp đánh bại đợt tập kích)',
+    historicalContext: 'Chiếc B-52G bị trúng tên lửa phòng không bốc cháy rực sáng bầu trời Hà Nội đêm 20/12/1972, củng cố niềm tin tuyệt đối của quân và dân ta vào khả năng tiêu diệt hoàn toàn siêu pháo đài bay Mỹ.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~9–13 tấn bom (27 quả)',
+      armament: '8 động cơ phản lực, radar cảnh giới tầm xa, hệ thống pháo sáng gây nhiễu'
+    },
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
+    colorScheme: {
+      body: '#283618',
+      wing: '#1b2410',
+      cockpit: '#dda15e',
+      stripe: '#bc6c25'
+    }
+  },
+
+  // ═══ 5. B-52G (Số hiệu: 58-0198) — 21/12/1972 ═══
+  {
+    id: 'b52g_58_0198',
+    name: 'Boeing B-52G Stratofortress',
+    code: 'B-52G #58-0198',
+    serialNumber: '58-0198',
+    role: 'Máy bay ném bom chiến lược — mang ~9–13 tấn bom (27 quả)',
+    shotDownDate: '21/12/1972 (Đêm thứ tư)',
+    creditedUnit: 'Lực lượng tên lửa/pháo cao xạ đêm 21–22/12/1972',
+    historicalContext: 'Đêm 21/12/1972, khi không quân Mỹ điên cuồng dội bom rải thảm vào các khu dân cư Hà Nội - Hải Phòng, chiếc B-52G số hiệu 58-0198 đã bị tên lửa phòng không ta đón đầu bắn gãy cánh bốc cháy dữ dội.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~9–13 tấn bom (27 quả)',
+      armament: '8 động cơ J57, tháp pháo đuôi 4x12.7mm M3, hệ thống gây nhiễu ALQ'
+    },
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
+    colorScheme: {
+      body: '#212529',
+      wing: '#16181b',
+      cockpit: '#72efdd',
+      stripe: '#f72585'
+    }
+  },
+
+  // ═══ 6. B-52G (Số hiệu: 58-0169) — 21/12/1972 ═══
+  {
+    id: 'b52g_58_0169',
+    name: 'Boeing B-52G Stratofortress',
+    code: 'B-52G #58-0169',
+    serialNumber: '58-0169',
+    role: 'Máy bay ném bom chiến lược — mang ~9–13 tấn bom (27 quả)',
+    shotDownDate: '21/12/1972 (Đêm thứ tư)',
+    creditedUnit: 'Lực lượng tên lửa/pháo cao xạ đêm 21–22/12/1972',
+    historicalContext: 'Bị bắn rơi trong đêm cao điểm 21/12/1972, biến thành ngọn đuốc khổng lồ cắm đầu xuống vùng ngoại thành, thiêu rụi ảo tưởng dùng sức mạnh không quân khuất phục ý chí dân tộc Việt Nam.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~9–13 tấn bom (27 quả)',
+      armament: 'Hệ thống bom thông thường, thiết bị dẫn đường vô tuyến Doppler'
+    },
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
+    colorScheme: {
+      body: '#343a40',
+      wing: '#212529',
+      cockpit: '#48cae4',
+      stripe: '#e76f51'
+    }
+  },
+
+  // ═══ 7. B-52D (Số hiệu: 55-0050) — 22/12/1972 ═══
+  {
+    id: 'b52d_55_0050',
+    name: 'Boeing B-52D Stratofortress',
+    code: 'B-52D #55-0050',
+    serialNumber: '55-0050',
+    role: 'Máy bay ném bom chiến lược — mang ~27–30 tấn bom (108 quả)',
+    shotDownDate: '22/12/1972 (Đêm thứ năm)',
+    creditedUnit: 'Lực lượng phòng không đêm 22–23/12/1972',
+    historicalContext: 'B-52D mang theo gần 30 tấn bom rải thảm bị tên lửa phòng không phát hiện từ cự ly thích hợp và phóng đạn tiêu diệt đêm 22/12/1972.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~27–30 tấn bom (108 quả)',
+      armament: 'Khoang bom Big Belly, hệ thống gây nhiễu chủ động và thụ động cực mạnh'
+    },
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
+    colorScheme: {
+      body: '#3d405b',
+      wing: '#2b2d42',
+      cockpit: '#81b29a',
+      stripe: '#e07a5f'
+    }
+  },
+
+  // ═══ 8. B-52D (Số hiệu: 55-0061) — 22/12/1972 ═══
+  {
+    id: 'b52d_55_0061',
+    name: 'Boeing B-52D Stratofortress',
+    code: 'B-52D #55-0061',
+    serialNumber: '55-0061',
+    role: 'Máy bay ném bom chiến lược — mang ~27–30 tấn bom (108 quả)',
+    shotDownDate: '22/12/1972 (Đêm thứ năm)',
+    creditedUnit: 'Lực lượng phòng không đêm 22–23/12/1972',
+    historicalContext: 'Chiếc B-52D số hiệu 55-0061 bị lưới lửa tên lửa phòng không quật ngã trong đêm 22/12/1972 khi đang chuẩn bị vào vệt cắt bom hủy diệt.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~27–30 tấn bom (108 quả)',
+      armament: '8 động cơ phản lực J57, tháp pháo đuôi điều khiển tự động bằng radar'
+    },
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
+    colorScheme: {
+      body: '#22333b',
+      wing: '#141e24',
+      cockpit: '#eae0d5',
+      stripe: '#c6ac8f'
+    }
+  },
+
+  // ═══ 9. B-52D (Số hiệu: 56-0674) — 26/12/1972 ═══
+  {
+    id: 'b52d_56_0674',
+    name: 'Boeing B-52D Stratofortress (Trận 26/12)',
+    code: 'B-52D #56-0674',
+    serialNumber: '56-0674',
+    role: 'Máy bay ném bom chiến lược — mang ~27–30 tấn bom (108 quả)',
+    shotDownDate: '26/12/1972 (Trận đánh lớn nhất - 8 B-52 rơi)',
+    creditedUnit: 'Trung đoàn pháo cao xạ 252 (lần đầu dùng pháo 100mm hạ 1 B-52)',
+    historicalContext: 'Đêm 26/12/1972 là trận đánh quyết định lớn nhất chiến dịch với 8 chiếc B-52 bị bắn rơi trong một đêm. Đặc biệt, Trung đoàn pháo cao xạ 252 đã lập kỳ tích lịch sử khi dùng pháo cao xạ 100mm đón đầu bắn rơi tại chỗ 1 pháo đài bay B-52, chứng minh sức mạnh của pháo cao xạ Việt Nam.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~27–30 tấn bom (108 quả)',
+      armament: 'Khoang bom Big Belly, 8 động cơ phản lực, thiết bị phóng nhiễu Chaff'
+    },
+    baseScore: 550,
+    baseHp: 4,
+    baseSpeed: 1.35,
+    colorScheme: {
+      body: '#1b1b1e',
+      wing: '#111113',
+      cockpit: '#ffd166',
+      stripe: '#ef476f'
+    }
+  },
+
+  // ═══ 10. B-52D (Số hiệu: 56-0650) — 28/12/1972 (Vũ Xuân Thiều) ═══
+  {
+    id: 'b52d_56_0650',
+    name: 'Boeing B-52D Stratofortress (Chiến Công Vũ Xuân Thiều)',
+    code: 'B-52D #56-0650',
+    serialNumber: '56-0650',
+    role: 'Máy bay ném bom chiến lược — mang ~27–30 tấn bom (108 quả)',
+    shotDownDate: '28/12/1972 (21h45 đêm)',
+    creditedUnit: 'Anh hùng Phi công Vũ Xuân Thiều (Trung đoàn không quân 927, lái MiG-21)',
+    historicalContext: 'Chiến công bất tử rạng danh non sông: Đêm 28/12/1972 lúc 21h45, phi công Vũ Xuân Thiều lái tiêm kích MiG-21 vượt qua hàng rào tiêm kích F-4 bảo vệ, tiếp cận B-52 ở cự ly cực gần, phóng 2 quả tên lửa rồi quả cảm lao thẳng máy bay MiG-21 vào pháo đài bay giặc, cùng nổ tung tiêu diệt B-52 trên bầu trời.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '~27–30 tấn bom (108 quả)',
+      armament: 'Tháp pháo đuôi 4x12.7mm, hệ thống radar cảnh báo rải bom đêm'
+    },
+    baseScore: 600,
+    baseHp: 4,
+    baseSpeed: 1.35,
+    colorScheme: {
+      body: '#0f1416',
+      wing: '#0a0d0e',
+      cockpit: '#00b4d8',
+      stripe: '#d90429'
+    }
+  },
+
+  // ═══ 11. B-52 (D/G còn lại) ═══
+  {
+    id: 'b52_fleet_general',
+    name: 'Boeing B-52 Stratofortress (Phi Đội B-52)',
+    code: 'B-52 Chiến Dịch Linebacker II',
+    role: 'Máy bay ném bom chiến lược — 24 chiếc còn lại trong tổng số 34 B-52 bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân (tên lửa, pháo cao xạ, không quân)',
+    historicalContext: 'Trong toàn bộ 12 ngày đêm chiến dịch Điện Biên Phủ trên không, quân và dân ta đã bắn rơi tổng cộng 34 pháo đài bay B-52 bất khả xâm phạm, làm sụp đổ hoàn toàn thần tượng sức mạnh của không quân chiến lược Mỹ, buộc Tổng thống Nixon phải ký Hiệp định Paris.',
+    aircraftType: 'B52',
+    specs: {
+      origin: 'Hoa Kỳ (Boeing)',
+      maxSpeed: '1.047 km/h',
+      wingspan: '56.4 m',
+      bombLoad: '9–30 tấn bom tùy loại D/G',
+      armament: '8 động cơ phản lực, hệ thống điện tử gây nhiễu tối tân'
+    },
+    baseScore: 500,
+    baseHp: 4,
+    baseSpeed: 1.4,
     colorScheme: {
       body: '#2c3e50',
       wing: '#1a252f',
-      cockpit: '#7fb3d5',
-      stripe: '#f1c40f'
+      cockpit: '#1abc9c',
+      stripe: '#e74c3c'
     }
   },
+
+  // ═══ 12. F-4 (Phantom II — "Con Ma") ═══
   {
-    id: 'b26_invader_01',
-    name: 'Douglas B-26 Invader',
-    code: 'B-26 Invader "Kẻ Xâm Lược"',
-    frenchUnit: 'Không đoàn Oanh tạc GB 1/19 Gascogne',
-    role: 'Oanh tạc cơ hạng trung ném bom hủy diệt',
-    shotDownTime: '15:10',
-    shotDownDate: '27/03/1954 (Đợt 2 chiến dịch)',
-    shotDownLocation: 'Khu vực lòng chảo Mường Thanh',
-    creditedUnit: 'Tiểu đoàn 382, Trung đoàn Pháo cao xạ 367',
-    historicalContext: 'Oanh tạc cơ 2 động cơ trang bị hỏa lực cực mạnh, chuyên ném bom rải thảm và bắn phá giao thông huyết mạch kéo pháo của quân đội ta. Bị trúng loạt đạn pháo 37mm nổ tung trên không.',
+    id: 'f4_phantom_ii',
+    name: 'McDonnell Douglas F-4 Phantom II ("Con Ma")',
+    code: 'F-4 Phantom II',
+    role: 'Tiêm kích đa năng, hộ tống B-52 và không chiến — 21 chiếc bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân (tên lửa, pháo cao xạ, không quân, dân quân tự vệ)',
+    historicalContext: 'F-4 Phantom II là tiêm kích siêu âm chủ lực tối tân bậc nhất của Mỹ, bay hộ tống bảo vệ và ném bom bảo vệ đội hình B-52. Trong 12 ngày đêm, có tới 21 chiếc "Con Ma" F-4 bị lưới lửa tên lửa, pháo cao xạ và MiG-21 của ta bắn rơi tan xác.',
+    aircraftType: 'JET_FIGHTER',
     specs: {
-      origin: 'Hoa Kỳ (Douglas Aircraft)',
-      maxSpeed: '571 km/h',
-      wingspan: '21.34 m',
-      armament: '8 súng máy 12.7mm mũi, mang 2.700 kg bom các loại'
+      origin: 'Hoa Kỳ (McDonnell Douglas)',
+      maxSpeed: '2.370 km/h (Mach 2.23)',
+      wingspan: '11.7 m',
+      bombLoad: 'Tải trọng 8.4 tấn vũ khí',
+      armament: '4 tên lửa AIM-7 Sparrow, 4 tên lửa AIM-9 Sidewinder, pháo 20mm M61 Vulcan'
     },
-    baseScore: 350,
-    baseHp: 4,
-    baseSpeed: 2.0,
+    baseScore: 250,
+    baseHp: 2,
+    baseSpeed: 2.7,
     colorScheme: {
       body: '#4a5568',
       wing: '#2d3748',
-      cockpit: '#a0aec0',
-      stripe: '#e53e3e'
+      cockpit: '#63b3ed',
+      stripe: '#f56565'
     }
   },
+
+  // ═══ 13. A-7 (Corsair II) ═══
   {
-    id: 'c119_flying_boxcar_01',
-    name: 'Fairchild C-119 Flying Boxcar',
-    code: 'C-119 "Toa Xe Bay"',
-    frenchUnit: 'Biệt đội Vận tải Hỗn hợp CAT (Mỹ lái thuê cho Pháp)',
-    role: 'Vận tải chiến lược siêu trọng',
-    shotDownTime: '10:05',
-    shotDownDate: '04/04/1954',
-    shotDownLocation: 'Phân khu Nam (Hồng Cúm)',
-    creditedUnit: 'Khẩu đội 3, Đại đội 817, Tiểu đoàn 383',
-    historicalContext: 'Chiếc phi cơ 2 thân khổng lồ do phi công Mỹ thuộc tập đoàn CAT điều khiển chở pháo 105mm và đạn hạng nặng tiếp viện cho De Castries. Bị bắn đứt đuôi rơi cách sở chỉ huy Pháp 1.5km.',
+    id: 'a7_corsair_ii',
+    name: 'LTV A-7 Corsair II',
+    code: 'A-7 Corsair II',
+    role: 'Cường kích, chế áp/tấn công trận địa phòng không — 12 chiếc bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân',
+    historicalContext: 'A-7 Corsair II là máy bay cường kích tấn công mặt đất hiện đại của Hải quân và Không quân Mỹ, được trang bị hệ thống ngắm bắn kỹ thuật số chuyên đi săn lùng và đánh phá các trận địa tên lửa, pháo cao xạ. Đã có 12 chiếc A-7 bị các khẩu đội phòng không của ta bắn hạ.',
+    aircraftType: 'ATTACK_BOMBER',
     specs: {
-      origin: 'Hoa Kỳ (Fairchild)',
-      maxSpeed: '450 km/h',
-      wingspan: '33.30 m',
-      armament: 'Tải trọng 13.6 tấn hoặc 62 lính dù'
+      origin: 'Hoa Kỳ (Ling-Temco-Vought)',
+      maxSpeed: '1.114 km/h',
+      wingspan: '11.8 m',
+      bombLoad: 'Mang tới 6.8 tấn bom đạn',
+      armament: '1 pháo 20mm M61A1 Vulcan (1.000 viên), bom dẫn đường laser Paveway, tên lửa AGM-45 Shrike'
     },
-    baseScore: 400,
-    baseHp: 5,
-    baseSpeed: 1.3,
-    colorScheme: {
-      body: '#708090',
-      wing: '#4f5d6a',
-      cockpit: '#add8e6',
-      stripe: '#ffd700'
-    }
-  },
-  {
-    id: 'sb2c_helldiver_01',
-    name: 'Curtiss SB2C-5 Helldiver',
-    code: 'SB2C Helldiver "Kẻ Bổ Nhào Địa Ngục"',
-    frenchUnit: 'Hải đội Không quân 3F',
-    role: 'Cường kích ném bom bổ nhào',
-    shotDownTime: '16:40',
-    shotDownDate: '24/04/1954',
-    shotDownLocation: 'Khu vực Đồi A1 (Eliane 2)',
-    creditedUnit: 'Đại đội 824, Tiểu đoàn 382',
-    historicalContext: 'Được mệnh danh là sát thủ bổ nhào, chiếc Helldiver đang nỗ lực cắt bom cứu nguy cho quân Pháp đang bị ta vây lấn tại đồi A1 thì bị pháo thủ ta đón điểm nổ bắn rơi cắm đầu xuống giao thông hào.',
-    specs: {
-      origin: 'Hoa Kỳ (Curtiss-Wright)',
-      maxSpeed: '475 km/h',
-      wingspan: '15.16 m',
-      armament: '2 pháo 20mm, 2 súng máy 7.62mm đuôi, 1.000 kg bom'
-    },
-    baseScore: 300,
+    baseScore: 220,
     baseHp: 2,
-    baseSpeed: 2.2,
+    baseSpeed: 2.3,
     colorScheme: {
-      body: '#1f2937',
-      wing: '#111827',
-      cockpit: '#60a5fa',
-      stripe: '#dc2626'
+      body: '#52796f',
+      wing: '#354f52',
+      cockpit: '#84a98c',
+      stripe: '#f4a261'
     }
   },
+
+  // ═══ 14. F-111A (Aardvark — "Cánh cụp cánh xòe") ═══
   {
-    id: 'au1_corsair_01',
-    name: 'Vought AU-1 Corsair',
-    code: 'AU-1 Corsair "Cánh Chim Hải Âu"',
-    frenchUnit: 'Hải đội 14F Không quân Hải quân Pháp',
-    role: 'Cường kích chi viện hỏa lực tầm gần',
-    shotDownTime: '13:55',
-    shotDownDate: '01/05/1954 (Đợt 3 - Tổng công kích)',
-    shotDownLocation: 'Cứ điểm C2 (Eliane 4)',
-    creditedUnit: 'Đại đội 815, Tiểu đoàn 383, Trung đoàn 367',
-    historicalContext: 'Chiếc Corsair với đôi cánh gập ngược đặc trưng là đợt tăng viện cuối cùng trong tuyệt vọng của Pháp trước khi toàn bộ tập đoàn cứ điểm Điện Biên Phủ sụp đổ ngày 07/05/1954.',
+    id: 'f111a_aardvark',
+    name: 'General Dynamics F-111A Aardvark ("Cánh Cụp Cánh Xòe")',
+    code: 'F-111A "Cánh Biến Hình"',
+    role: 'Ném bom chiến thuật cánh biến hình, bay thấp ném bom ban đêm — 5 chiếc bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân & Dân quân tự vệ',
+    historicalContext: 'F-111A là "con bài tẩy" hiện đại bậc nhất của Mỹ với đôi cánh có thể cụp xòe tự động, trang bị radar bám địa hình bay cực thấp luồn lách qua thung lũng ban đêm để tránh radar. Tuy nhiên, các trận địa pháo cao xạ tầm thấp và súng máy của quân dân ta đã đón lõng bắn rơi 5 chiếc F-111A tối tân này.',
+    aircraftType: 'SWING_WING',
     specs: {
-      origin: 'Hoa Kỳ (Chance Vought)',
-      maxSpeed: '684 km/h',
-      wingspan: '12.47 m',
-      armament: '4 pháo 20mm M3, 8 rocket HVAR 127mm, 1.800 kg bom'
+      origin: 'Hoa Kỳ (General Dynamics)',
+      maxSpeed: '2.655 km/h (Mach 2.5)',
+      wingspan: '19.2 m (xòe) / 9.74 m (cụp)',
+      bombLoad: 'Mang tới 14.3 tấn bom trong khoang và trên cánh',
+      armament: 'Radar bám địa hình TFR AN/APQ-110, bom nổ phá, pháo 20mm Vulcan'
     },
     baseScore: 350,
     baseHp: 3,
+    baseSpeed: 2.9,
+    colorScheme: {
+      body: '#3a5a40',
+      wing: '#344e41',
+      cockpit: '#a3b18a',
+      stripe: '#e76f51'
+    }
+  },
+
+  // ═══ 15. A-6A (Intruder) ═══
+  {
+    id: 'a6a_intruder',
+    name: 'Grumman A-6A Intruder',
+    code: 'A-6A Intruder',
+    role: 'Cường kích hải quân, ném bom mọi thời tiết — 4 chiếc bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân',
+    historicalContext: 'A-6A Intruder là cường kích hạm đội hoạt động từ các tàu sân bay Mỹ ngoài vịnh Bắc Bộ, có khả năng bay đêm và ném bom trong mọi điều kiện thời tiết xấu nhờ radar DIANE tối tân. Có 4 chiếc A-6A đã bị hỏa lực phòng không miền Bắc bắn rơi.',
+    aircraftType: 'ATTACK_BOMBER',
+    specs: {
+      origin: 'Hoa Kỳ (Grumman)',
+      maxSpeed: '1.037 km/h',
+      wingspan: '16.15 m',
+      bombLoad: 'Mang tối đa 8.2 tấn bom',
+      armament: 'Hệ thống ngắm bắn kỹ thuật số DIANE, mang tới 28 quả bom Mk 82 227kg'
+    },
+    baseScore: 200,
+    baseHp: 2,
+    baseSpeed: 2.1,
+    colorScheme: {
+      body: '#495057',
+      wing: '#343a40',
+      cockpit: '#90e0ef',
+      stripe: '#e63946'
+    }
+  },
+
+  // ═══ 16. RA-5C (Vigilante) ═══
+  {
+    id: 'ra5c_vigilante',
+    name: 'North American RA-5C Vigilante',
+    code: 'RA-5C Trinh Sát Hải Quân',
+    role: 'Trinh sát chiến lược của hải quân — 2 chiếc bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân',
+    historicalContext: 'RA-5C Vigilante là máy bay trinh sát siêu thanh hiện đại nhất của Hải quân Mỹ, mang theo các dàn máy ảnh quét quang học, hồng ngoại và radar quan sát cạnh hông SLAR để trinh sát sau các đợt oanh tạc. Có 2 chiếc RA-5C bị tên lửa phòng không của ta bắn tan xác.',
+    aircraftType: 'RECON',
+    specs: {
+      origin: 'Hoa Kỳ (North American Aviation)',
+      maxSpeed: '2.124 km/h (Mach 2.0)',
+      wingspan: '16.16 m',
+      bombLoad: 'Không mang bom (Trang bị pod trinh sát điện tử tổng hợp)',
+      armament: 'Hệ thống cảm biến hồng ngoại AN/AAS-21, radar nhìn cạnh AN/APD-7, camera toàn cảnh'
+    },
+    baseScore: 300,
+    baseHp: 2,
+    baseSpeed: 3.1,
+    colorScheme: {
+      body: '#6c757d',
+      wing: '#495057',
+      cockpit: '#caf0f8',
+      stripe: '#fca311'
+    }
+  },
+
+  // ═══ 17. F-105D (Thunderchief — "Thần Sấm") ═══
+  {
+    id: 'f105d_thunderchief',
+    name: 'Republic F-105D Thunderchief ("Thần Sấm")',
+    code: 'F-105D "Thần Sấm"',
+    role: 'Tiêm kích ném bom — 1 chiếc bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân',
+    historicalContext: 'F-105D "Thần Sấm" từng là xương sống ném bom chủ lực của Không quân Mỹ trong chiến tranh phá hoại miền Bắc. Trong 12 ngày đêm cuối năm 1972, thêm 1 chiếc Thần Sấm F-105D đã bị hỏa lực phòng không của quân dân miền Bắc bắn hạ đền tội.',
+    aircraftType: 'JET_FIGHTER',
+    specs: {
+      origin: 'Hoa Kỳ (Republic Aviation)',
+      maxSpeed: '2.208 km/h (Mach 2.08)',
+      wingspan: '10.65 m',
+      bombLoad: 'Mang tới 6.4 tấn bom đạn',
+      armament: '1 pháo 20mm M61A1 Vulcan (1.028 viên), tên lửa AIM-9 Sidewinder, bom nổ phá Mk 83'
+    },
+    baseScore: 250,
+    baseHp: 2,
     baseSpeed: 2.6,
     colorScheme: {
-      body: '#0f172a',
-      wing: '#020617',
-      cockpit: '#38bdf8',
-      stripe: '#ffffff'
+      body: '#606c38',
+      wing: '#283618',
+      cockpit: '#fefae0',
+      stripe: '#d62828'
+    }
+  },
+
+  // ═══ 18. HH-53 (Super Jolly Green Giant) — TRỰC THĂNG ═══
+  {
+    id: 'hh53_super_jolly',
+    name: 'Sikorsky HH-53 Super Jolly Green Giant',
+    code: 'HH-53 Trực Thăng Cứu Hộ',
+    role: 'Trực thăng cứu hộ chiến đấu, cứu phi công Mỹ nhảy dù — 1 chiếc duy nhất bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân',
+    historicalContext: 'HH-53 là loại trực thăng bọc thép hạng nặng khổng lồ của Không quân Mỹ, được trang bị súng máy 6 nòng minigun và cần tiếp dầu trên không chuyên bay luồn sâu vào miền Bắc để giải cứu các phi công B-52 và tiêm kích Mỹ bị bắn rơi nhảy dù. Chiếc HH-53 duy nhất tham gia chiến dịch đã bị lưới lửa phòng không của ta bắn rơi tan tành.',
+    aircraftType: 'HELICOPTER',
+    specs: {
+      origin: 'Hoa Kỳ (Sikorsky Aircraft)',
+      maxSpeed: '315 km/h',
+      wingspan: 'Đường kính cánh quạt 22 m',
+      bombLoad: 'Không mang bom (Trang bị tời cứu hộ bọc thép hạng nặng)',
+      armament: '3 súng máy 6 nòng xoay 7.62mm GAU-2/A hoặc pháo 12.7mm GAU-18'
+    },
+    baseScore: 350,
+    baseHp: 3,
+    baseSpeed: 1.6,
+    colorScheme: {
+      body: '#386641',
+      wing: '#1b4332',
+      cockpit: '#95d5b2',
+      stripe: '#bc4749'
+    }
+  },
+
+  // ═══ 19. 147-SC (Ryan Firebee) — KHÔNG NGƯỜI LÁI ═══
+  {
+    id: 'ryan_147sc_firebee',
+    name: 'Teledyne Ryan Model 147-SC Firebee (UAV Trinh Sát)',
+    code: '147-SC Máy Bay Không Người Lái',
+    role: 'Máy bay trinh sát không người lái — 1 chiếc duy nhất bị bắn rơi cả chiến dịch',
+    shotDownDate: 'Rải rác 18–29/12/1972',
+    creditedUnit: 'Lực lượng phòng không ba thứ quân',
+    historicalContext: 'Ryan 147-SC là phương tiện bay không người lái (UAV) tối tân được phóng từ máy bay mẹ DC-130, bay theo quỹ đạo lập trình sẵn ở tầm thấp để chụp ảnh trinh sát các trận địa tên lửa SAM-2 và đánh giá thiệt hại sau các đợt ném bom B-52. Chiếc UAV 147-SC duy nhất tham chiến đã bị pháo cao xạ phát hiện và bắn hạ chính xác.',
+    aircraftType: 'DRONE',
+    specs: {
+      origin: 'Hoa Kỳ (Teledyne Ryan Aeronautical)',
+      maxSpeed: '885 km/h (Mach 0.72)',
+      wingspan: '4.0 m (Nhỏ gọn, khó phát hiện)',
+      bombLoad: 'Không mang bom (Trang bị camera viễn thám tự động)',
+      armament: 'Động cơ phản lực Continental J69-T-29, hệ thống chụp ảnh độ phân giải cao'
+    },
+    baseScore: 280,
+    baseHp: 1,
+    baseSpeed: 2.8,
+    colorScheme: {
+      body: '#6d597a',
+      wing: '#355070',
+      cockpit: '#eaac8b',
+      stripe: '#e56b6f'
     }
   }
 ];
