@@ -44,7 +44,7 @@ export const createRoom = mutation({
   },
 });
 
-// 2. Sinh viên tham gia phòng bằng Mã PIN
+// 2. Sinh viên tham gia phòng bằng Mã PIN (Khóa khi đã bắt đầu & Cấm trùng tên)
 export const joinRoom = mutation({
   args: {
     code: v.string(),
@@ -52,6 +52,12 @@ export const joinRoom = mutation({
   },
   handler: async (ctx, args) => {
     const cleanPin = args.code.trim();
+    const cleanName = args.playerName.trim();
+
+    if (!cleanName) {
+      throw new Error("Vui lòng nhập Họ & Tên của bạn!");
+    }
+
     const room = await ctx.db
       .query("dbpRooms")
       .withIndex("by_code", (q) => q.eq("code", cleanPin))
@@ -61,25 +67,32 @@ export const joinRoom = mutation({
       throw new Error("Không tìm thấy phòng với mã PIN này! Vui lòng kiểm tra lại.");
     }
 
+    // 🔒 1. Khóa phòng: Không cho phép vào giữa chừng khi trận đấu đã bắt đầu
+    if (room.status === "playing") {
+      throw new Error("Trận đấu đang diễn ra! Phòng đã bị khóa, không thể tham gia giữa chừng.");
+    }
+
     if (room.status === "finished") {
       throw new Error("Trận đấu trong phòng này đã kết thúc!");
     }
 
-    // Check if player name already exists in this room
+    // 🚫 2. Kiểm tra trùng tên: Tuyệt đối không cho phép đặt tên trùng nhau
     const existingPlayers = await ctx.db
       .query("dbpPlayers")
       .withIndex("by_room", (q) => q.eq("roomId", room._id))
       .collect();
 
-    let finalName = args.playerName.trim();
-    const isDuplicate = existingPlayers.some((p) => p.name.toLowerCase() === finalName.toLowerCase());
+    const isDuplicate = existingPlayers.some(
+      (p) => p.name.trim().toLowerCase() === cleanName.toLowerCase()
+    );
+
     if (isDuplicate) {
-      finalName = `${finalName} #${existingPlayers.length + 1}`;
+      throw new Error(`Tên "${cleanName}" đã có người sử dụng trong phòng! Vui lòng chọn tên khác.`);
     }
 
     const playerId = await ctx.db.insert("dbpPlayers", {
       roomId: room._id,
-      name: finalName,
+      name: cleanName,
       score: 0,
       planesDowned: 0,
       accuracy: 0,
@@ -94,13 +107,13 @@ export const joinRoom = mutation({
     // Add log
     await ctx.db.insert("dbpBattleLogs", {
       roomId: room._id,
-      playerName: finalName,
-      message: `${finalName} đã vào trận địa!`,
+      playerName: cleanName,
+      message: `${cleanName} đã vào trận địa!`,
       type: "reload",
       timestamp: Date.now(),
     });
 
-    return { roomId: room._id, code: room.code, playerId, room, playerName: finalName };
+    return { roomId: room._id, code: room.code, playerId, room, playerName: cleanName };
   },
 });
 

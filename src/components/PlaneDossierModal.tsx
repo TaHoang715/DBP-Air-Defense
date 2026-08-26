@@ -10,25 +10,29 @@ import {
   Award,
   Lock,
   CheckCircle2,
-  Flame,
-  Crosshair,
-  Sparkles,
-  ShieldAlert
+  Flame
 } from 'lucide-react';
 
 interface PlaneDossierModalProps {
   plane: HistoricalPlane | null;
   onFinishedReading: () => void;
+  onFinishReading?: () => void; // Support both naming styles
   countdownSeconds?: number;
 }
 
 export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
   plane,
   onFinishedReading,
-  countdownSeconds = 6
+  onFinishReading,
+  countdownSeconds = 5
 }) => {
   const [timeLeft, setTimeLeft] = useState<number>(countdownSeconds);
   const [canProceed, setCanProceed] = useState<boolean>(false);
+
+  const handleClose = () => {
+    if (onFinishedReading) onFinishedReading();
+    if (onFinishReading) onFinishReading();
+  };
 
   useEffect(() => {
     if (!plane) return;
@@ -50,18 +54,30 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
     return () => clearInterval(interval);
   }, [plane, countdownSeconds]);
 
+  // Keyboard shortcut: Press Space or Enter to continue once countdown completes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (canProceed && (e.code === 'Space' || e.code === 'Enter')) {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [canProceed]);
+
   if (!plane) return null;
 
   const progressPercent = ((countdownSeconds - timeLeft) / countdownSeconds) * 100;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 25 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 25 }}
-          transition={{ duration: 0.35 }}
+          transition={{ duration: 0.3 }}
           className="relative w-full max-w-2xl bg-[#1c2419] border-2 border-[#d4af37] rounded-3xl shadow-2xl overflow-hidden text-[#f7f6f2] flex flex-col max-h-[90vh]"
         >
           {/* Top Banner Stamp */}
@@ -86,7 +102,7 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
           </div>
 
           {/* Body Content */}
-          <div className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+          <div className="p-6 md:p-8 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
             {/* Plane Header Info */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-black/35 p-4 rounded-2xl border border-[#44563a]">
               <div>
@@ -159,12 +175,12 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
             </div>
 
             <button
-              onClick={onFinishedReading}
+              onClick={handleClose}
               disabled={!canProceed}
-              className={`w-full sm:w-auto px-8 py-3 rounded-xl font-military font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+              className={`w-full sm:w-auto px-8 py-3 rounded-xl font-military font-black text-xs flex items-center justify-center gap-2 transition-all ${
                 canProceed
                   ? 'bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-950/60 cursor-pointer animate-pulse hover:scale-105'
-                  : 'bg-gray-800 text-gray-400 cursor-not-allowed border border-white/10'
+                  : 'bg-gray-800 text-gray-400 cursor-not-allowed border border-white/10 opacity-70'
               }`}
             >
               {canProceed ? (
