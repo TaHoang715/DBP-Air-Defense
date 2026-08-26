@@ -10,6 +10,8 @@ export interface HistoricalPlane {
   shotDownDate: string; // Ngày bị bắn rơi
   creditedUnit: string; // Đơn vị lập công
   historicalContext: string; // Tư liệu lịch sử & diễn biến chiến công
+  imageUrl: string; // Ảnh tư liệu lịch sử thực tế
+  imageCaption: string; // Chú thích ảnh
   aircraftType: 'B52' | 'JET_FIGHTER' | 'SWING_WING' | 'ATTACK_BOMBER' | 'RECON' | 'HELICOPTER' | 'DRONE';
   specs: {
     origin: string;
@@ -40,6 +42,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '18/12/1972 (Đêm mở màn chiến dịch)',
     creditedUnit: 'Tiểu đoàn 59, Trung đoàn tên lửa 261 (SAM-2)',
     historicalContext: 'Đêm 18/12/1972, Tiểu đoàn 59 (Trung đoàn 261) đã phóng tên lửa SAM-2 bắn rơi tại chỗ chiếc pháo đài bay B-52G đầu tiên của không quân chiến lược Mỹ trên cánh đồng Chuôm (Phù Lỗ, Sóc Sơn), mở màn cho chuỗi chiến thắng lẫy lừng của chiến dịch.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/B-52G_refueling_1988.JPEG/800px-B-52G_refueling_1988.JPEG',
+    imageCaption: 'Pháo đài bay chiến lược Boeing B-52G của Không quân Mỹ',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -69,6 +73,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '19/12/1972 (Đêm thứ hai)',
     creditedUnit: 'Tiểu đoàn 77, Trung đoàn tên lửa 257 (SAM-2)',
     historicalContext: 'B-52D được Mỹ nâng cấp khoang bom phình to (Big Belly) mang tới 108 quả bom hủy diệt. Đêm 19/12/1972, Tiểu đoàn 77 (Trung đoàn 257) đã dùng phương pháp phát sóng bám sát mục tiêu chính xác trong dải nhiễu nặng, phóng đạn tiêu diệt hoàn toàn chiếc B-52D này.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boeing_B-52D_Stratofortress_USAF.jpg/800px-Boeing_B-52D_Stratofortress_USAF.jpg',
+    imageCaption: 'Boeing B-52D với khoang bom phình to (Big Belly) mang 108 quả bom',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -98,6 +104,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '20/12/1972 (Đêm thứ ba)',
     creditedUnit: 'Tiểu đoàn 57, 77, 79 (phối hợp bắn rơi 4 chiếc trong 9 phút)',
     historicalContext: 'Đêm 20 rạng sáng 21/12/1972 đi vào lịch sử phòng không thế giới khi các Tiểu đoàn tên lửa 57, 77, 79 hiệp đồng xuất quỷ nhập thần, bắn rơi liên tiếp 4 pháo đài bay B-52 chỉ trong vòng 9 phút, bẻ gãy hoàn toàn đợt tập kích quy mô lớn của địch.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boeing_B-52D_Stratofortress_USAF.jpg/800px-Boeing_B-52D_Stratofortress_USAF.jpg',
+    imageCaption: 'Pháo đài bay B-52D trong chiến dịch Linebacker II',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -127,6 +135,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '20/12/1972 (Đêm thứ ba)',
     creditedUnit: 'Tiểu đoàn 57, 77, 79 (phối hợp đánh bại đợt tập kích)',
     historicalContext: 'Chiếc B-52G bị trúng tên lửa phòng không bốc cháy rực sáng bầu trời Hà Nội đêm 20/12/1972, củng cố niềm tin tuyệt đối của quân và dân ta vào khả năng tiêu diệt hoàn toàn siêu pháo đài bay Mỹ.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/B-52G_refueling_1988.JPEG/800px-B-52G_refueling_1988.JPEG',
+    imageCaption: 'Máy bay ném bom chiến lược B-52G của Không quân Chiến lược Mỹ (SAC)',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -156,6 +166,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '21/12/1972 (Đêm thứ tư)',
     creditedUnit: 'Lực lượng tên lửa/pháo cao xạ đêm 21–22/12/1972',
     historicalContext: 'Đêm 21/12/1972, khi không quân Mỹ điên cuồng dội bom rải thảm vào các khu dân cư Hà Nội - Hải Phòng, chiếc B-52G số hiệu 58-0198 đã bị tên lửa phòng không ta đón đầu bắn gãy cánh bốc cháy dữ dội.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/B-52G_refueling_1988.JPEG/800px-B-52G_refueling_1988.JPEG',
+    imageCaption: 'Pháo đài bay B-52G được mệnh danh là vũ khí hủy diệt tối thượng',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -185,6 +197,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '21/12/1972 (Đêm thứ tư)',
     creditedUnit: 'Lực lượng tên lửa/pháo cao xạ đêm 21–22/12/1972',
     historicalContext: 'Bị bắn rơi trong đêm cao điểm 21/12/1972, biến thành ngọn đuốc khổng lồ cắm đầu xuống vùng ngoại thành, thiêu rụi ảo tưởng dùng sức mạnh không quân khuất phục ý chí dân tộc Việt Nam.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/B-52G_refueling_1988.JPEG/800px-B-52G_refueling_1988.JPEG',
+    imageCaption: 'B-52G với tầm bay liên lục địa và sải cánh khổng lồ 56.4 mét',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -214,6 +228,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '22/12/1972 (Đêm thứ năm)',
     creditedUnit: 'Lực lượng phòng không đêm 22–23/12/1972',
     historicalContext: 'B-52D mang theo gần 30 tấn bom rải thảm bị tên lửa phòng không phát hiện từ cự ly thích hợp và phóng đạn tiêu diệt đêm 22/12/1972.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boeing_B-52D_Stratofortress_USAF.jpg/800px-Boeing_B-52D_Stratofortress_USAF.jpg',
+    imageCaption: 'Boeing B-52D Stratofortress rải thảm bom tàn phá mục tiêu',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -243,6 +259,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '22/12/1972 (Đêm thứ năm)',
     creditedUnit: 'Lực lượng phòng không đêm 22–23/12/1972',
     historicalContext: 'Chiếc B-52D số hiệu 55-0061 bị lưới lửa tên lửa phòng không quật ngã trong đêm 22/12/1972 khi đang chuẩn bị vào vệt cắt bom hủy diệt.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boeing_B-52D_Stratofortress_USAF.jpg/800px-Boeing_B-52D_Stratofortress_USAF.jpg',
+    imageCaption: 'B-52D với 8 động cơ phản lực gầm thét trên bầu trời',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -272,6 +290,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '26/12/1972 (Trận đánh lớn nhất - 8 B-52 rơi)',
     creditedUnit: 'Trung đoàn pháo cao xạ 252 (lần đầu dùng pháo 100mm hạ 1 B-52)',
     historicalContext: 'Đêm 26/12/1972 là trận đánh quyết định lớn nhất chiến dịch với 8 chiếc B-52 bị bắn rơi trong một đêm. Đặc biệt, Trung đoàn pháo cao xạ 252 đã lập kỳ tích lịch sử khi dùng pháo cao xạ 100mm đón đầu bắn rơi tại chỗ 1 pháo đài bay B-52, chứng minh sức mạnh của pháo cao xạ Việt Nam.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boeing_B-52D_Stratofortress_USAF.jpg/800px-Boeing_B-52D_Stratofortress_USAF.jpg',
+    imageCaption: 'Xác máy bay B-52 bị quân và dân ta bắn hạ rực sáng trong đêm 26/12/1972',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -301,6 +321,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: '28/12/1972 (21h45 đêm)',
     creditedUnit: 'Anh hùng Phi công Vũ Xuân Thiều (Trung đoàn không quân 927, lái MiG-21)',
     historicalContext: 'Chiến công bất tử rạng danh non sông: Đêm 28/12/1972 lúc 21h45, phi công Vũ Xuân Thiều lái tiêm kích MiG-21 vượt qua hàng rào tiêm kích F-4 bảo vệ, tiếp cận B-52 ở cự ly cực gần, phóng 2 quả tên lửa rồi quả cảm lao thẳng máy bay MiG-21 vào pháo đài bay giặc, cùng nổ tung tiêu diệt B-52 trên bầu trời.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boeing_B-52D_Stratofortress_USAF.jpg/800px-Boeing_B-52D_Stratofortress_USAF.jpg',
+    imageCaption: 'B-52D bị anh hùng phi công Vũ Xuân Thiều cảm tử tiêu diệt đêm 28/12/1972',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -329,6 +351,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân (tên lửa, pháo cao xạ, không quân)',
     historicalContext: 'Trong toàn bộ 12 ngày đêm chiến dịch Điện Biên Phủ trên không, quân và dân ta đã bắn rơi tổng cộng 34 pháo đài bay B-52 bất khả xâm phạm, làm sụp đổ hoàn toàn thần tượng sức mạnh của không quân chiến lược Mỹ, buộc Tổng thống Nixon phải ký Hiệp định Paris.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Boeing_B-52D_Stratofortress_USAF.jpg/800px-Boeing_B-52D_Stratofortress_USAF.jpg',
+    imageCaption: 'Tổng cộng 34 siêu pháo đài bay B-52 bị bắn rơi trong 12 ngày đêm 1972',
     aircraftType: 'B52',
     specs: {
       origin: 'Hoa Kỳ (Boeing)',
@@ -357,6 +381,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân (tên lửa, pháo cao xạ, không quân, dân quân tự vệ)',
     historicalContext: 'F-4 Phantom II là tiêm kích siêu âm chủ lực tối tân bậc nhất của Mỹ, bay hộ tống bảo vệ và ném bom bảo vệ đội hình B-52. Trong 12 ngày đêm, có tới 21 chiếc "Con Ma" F-4 bị lưới lửa tên lửa, pháo cao xạ và MiG-21 của ta bắn rơi tan xác.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/F-4C_4525_CCTW_over_Vietnam_1967.jpg/800px-F-4C_4525_CCTW_over_Vietnam_1967.jpg',
+    imageCaption: 'Tiêm kích phản lực siêu âm F-4 Phantom II ("Con Ma") của Không quân Mỹ',
     aircraftType: 'JET_FIGHTER',
     specs: {
       origin: 'Hoa Kỳ (McDonnell Douglas)',
@@ -385,6 +411,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân',
     historicalContext: 'A-7 Corsair II là máy bay cường kích tấn công mặt đất hiện đại của Hải quân và Không quân Mỹ, được trang bị hệ thống ngắm bắn kỹ thuật số chuyên đi săn lùng và đánh phá các trận địa tên lửa, pháo cao xạ. Đã có 12 chiếc A-7 bị các khẩu đội phòng không của ta bắn hạ.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/A-7E_Corsair_II_VA-82_in_flight_1975.JPEG/800px-A-7E_Corsair_II_VA-82_in_flight_1975.JPEG',
+    imageCaption: 'Máy bay cường kích tấn công mặt đất LTV A-7 Corsair II',
     aircraftType: 'ATTACK_BOMBER',
     specs: {
       origin: 'Hoa Kỳ (Ling-Temco-Vought)',
@@ -413,6 +441,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân & Dân quân tự vệ',
     historicalContext: 'F-111A là "con bài tẩy" hiện đại bậc nhất của Mỹ với đôi cánh có thể cụp xòe tự động, trang bị radar bám địa hình bay cực thấp luồn lách qua thung lũng ban đêm để tránh radar. Tuy nhiên, các trận địa pháo cao xạ tầm thấp và súng máy của quân dân ta đã đón lõng bắn rơi 5 chiếc F-111A tối tân này.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/F-111A_428th_TFS_over_Vietnam_1968.jpg/800px-F-111A_428th_TFS_over_Vietnam_1968.jpg',
+    imageCaption: 'Máy bay ném bom cánh cụp cánh xòe F-111A Aardvark của Không quân Mỹ',
     aircraftType: 'SWING_WING',
     specs: {
       origin: 'Hoa Kỳ (General Dynamics)',
@@ -441,6 +471,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân',
     historicalContext: 'A-6A Intruder là cường kích hạm đội hoạt động từ các tàu sân bay Mỹ ngoài vịnh Bắc Bộ, có khả năng bay đêm và ném bom trong mọi điều kiện thời tiết xấu nhờ radar DIANE tối tân. Có 4 chiếc A-6A đã bị hỏa lực phòng không miền Bắc bắn rơi.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/A-6A_Intruder_VA-196_in_flight_1971.jpg/800px-A-6A_Intruder_VA-196_in_flight_1971.jpg',
+    imageCaption: 'Cường kích hải quân Grumman A-6A Intruder chuyên đánh đêm mọi thời tiết',
     aircraftType: 'ATTACK_BOMBER',
     specs: {
       origin: 'Hoa Kỳ (Grumman)',
@@ -469,6 +501,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân',
     historicalContext: 'RA-5C Vigilante là máy bay trinh sát siêu thanh hiện đại nhất của Hải quân Mỹ, mang theo các dàn máy ảnh quét quang học, hồng ngoại và radar quan sát cạnh hông SLAR để trinh sát sau các đợt oanh tạc. Có 2 chiếc RA-5C bị tên lửa phòng không của ta bắn tan xác.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/RA-5C_Vigilante_RVAH-14_in_flight_1974.jpg/800px-RA-5C_Vigilante_RVAH-14_in_flight_1974.jpg',
+    imageCaption: 'Máy bay trinh sát siêu âm tầm xa North American RA-5C Vigilante',
     aircraftType: 'RECON',
     specs: {
       origin: 'Hoa Kỳ (North American Aviation)',
@@ -497,6 +531,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân',
     historicalContext: 'F-105D "Thần Sấm" từng là xương sống ném bom chủ lực của Không quân Mỹ trong chiến tranh phá hoại miền Bắc. Trong 12 ngày đêm cuối năm 1972, thêm 1 chiếc Thần Sấm F-105D đã bị hỏa lực phòng không của quân dân miền Bắc bắn hạ đền tội.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/F-105D_357th_TFS_over_North_Vietnam_1967.jpg/800px-F-105D_357th_TFS_over_North_Vietnam_1967.jpg',
+    imageCaption: 'Tiêm kích ném bom siêu âm hạng nặng Republic F-105D Thunderchief',
     aircraftType: 'JET_FIGHTER',
     specs: {
       origin: 'Hoa Kỳ (Republic Aviation)',
@@ -525,6 +561,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân',
     historicalContext: 'HH-53 là loại trực thăng bọc thép hạng nặng khổng lồ của Không quân Mỹ, được trang bị súng máy 6 nòng minigun và cần tiếp dầu trên không chuyên bay luồn sâu vào miền Bắc để giải cứu các phi công B-52 và tiêm kích Mỹ bị bắn rơi nhảy dù. Chiếc HH-53 duy nhất tham gia chiến dịch đã bị lưới lửa phòng không của ta bắn rơi tan tành.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Sikorsky_HH-53C_Super_Jolly_Green_Giant_USAF.jpg/800px-Sikorsky_HH-53C_Super_Jolly_Green_Giant_USAF.jpg',
+    imageCaption: 'Trực thăng cứu hộ hạng nặng bọc thép Sikorsky HH-53 của Không quân Mỹ',
     aircraftType: 'HELICOPTER',
     specs: {
       origin: 'Hoa Kỳ (Sikorsky Aircraft)',
@@ -553,6 +591,8 @@ export const HISTORICAL_PLANES: HistoricalPlane[] = [
     shotDownDate: 'Rải rác 18–29/12/1972',
     creditedUnit: 'Lực lượng phòng không ba thứ quân',
     historicalContext: 'Ryan 147-SC là phương tiện bay không người lái (UAV) tối tân được phóng từ máy bay mẹ DC-130, bay theo quỹ đạo lập trình sẵn ở tầm thấp để chụp ảnh trinh sát các trận địa tên lửa SAM-2 và đánh giá thiệt hại sau các đợt ném bom B-52. Chiếc UAV 147-SC duy nhất tham chiến đã bị pháo cao xạ phát hiện và bắn hạ chính xác.',
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Ryan_BQM-34A_Firebee_USAF.jpg/800px-Ryan_BQM-34A_Firebee_USAF.jpg',
+    imageCaption: 'Máy bay trinh sát phản lực không người lái Teledyne Ryan 147-SC Firebee',
     aircraftType: 'DRONE',
     specs: {
       origin: 'Hoa Kỳ (Teledyne Ryan Aeronautical)',

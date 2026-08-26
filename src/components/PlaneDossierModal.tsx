@@ -16,7 +16,9 @@ import {
   Target,
   Zap,
   Bomb,
-  Radio
+  Radio,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface PlaneDossierModalProps {
@@ -34,6 +36,8 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
 }) => {
   const [timeLeft, setTimeLeft] = useState<number>(countdownSeconds);
   const [canProceed, setCanProceed] = useState<boolean>(false);
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+  const [imageError, setImageError] = useState<boolean>(false);
 
   const handleClose = () => {
     if (onFinishedReading) onFinishedReading();
@@ -44,6 +48,8 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
     if (!plane) return;
     setTimeLeft(countdownSeconds);
     setCanProceed(false);
+    setImageLoaded(false);
+    setImageError(false);
 
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
@@ -80,19 +86,19 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
   const getAircraftTypeBadge = (type: HistoricalPlane['aircraftType']) => {
     switch (type) {
       case 'B52':
-        return { label: 'PHÁO ĐÀI BAY B-52', color: 'bg-red-950/80 text-red-300 border-red-500/60' };
+        return { label: 'PHÁO ĐÀI BAY B-52', color: 'bg-red-950/90 text-red-300 border-red-500/60 shadow-red-950/50' };
       case 'SWING_WING':
-        return { label: 'CÁNH CỤP CÁNH XÒE', color: 'bg-amber-950/80 text-amber-300 border-amber-500/60' };
+        return { label: 'CÁNH CỤP CÁNH XÒE', color: 'bg-amber-950/90 text-amber-300 border-amber-500/60 shadow-amber-950/50' };
       case 'JET_FIGHTER':
-        return { label: 'TIÊM KÍCH PHẢN LỰC', color: 'bg-blue-950/80 text-blue-300 border-blue-500/60' };
+        return { label: 'TIÊM KÍCH PHẢN LỰC', color: 'bg-blue-950/90 text-blue-300 border-blue-500/60 shadow-blue-950/50' };
       case 'ATTACK_BOMBER':
-        return { label: 'CƯỜNG KÍCH OANH TẠC', color: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/60' };
+        return { label: 'CƯỜNG KÍCH OANH TẠC', color: 'bg-emerald-950/90 text-emerald-300 border-emerald-500/60 shadow-emerald-950/50' };
       case 'HELICOPTER':
-        return { label: 'TRỰC THĂNG CỨU HỘ', color: 'bg-purple-950/80 text-purple-300 border-purple-500/60' };
+        return { label: 'TRỰC THĂNG CỨU HỘ', color: 'bg-purple-950/90 text-purple-300 border-purple-500/60 shadow-purple-950/50' };
       case 'DRONE':
-        return { label: 'UAV KHÔNG NGƯỜI LÁI', color: 'bg-cyan-950/80 text-cyan-300 border-cyan-500/60' };
+        return { label: 'UAV KHÔNG NGƯỜI LÁI', color: 'bg-cyan-950/90 text-cyan-300 border-cyan-500/60 shadow-cyan-950/50' };
       default:
-        return { label: 'MÁY BAY TRINH SÁT', color: 'bg-gray-950/80 text-gray-300 border-gray-500/60' };
+        return { label: 'MÁY BAY TRINH SÁT', color: 'bg-gray-950/90 text-gray-300 border-gray-500/60' };
     }
   };
 
@@ -106,25 +112,25 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 25 }}
           transition={{ duration: 0.3 }}
-          className="relative w-full max-w-2xl bg-[#1c2419] border-2 border-[#d4af37] rounded-3xl shadow-2xl overflow-hidden text-[#f7f6f2] flex flex-col max-h-[92vh]"
+          className="relative w-full max-w-2xl bg-[#182015] border-2 border-[#d4af37] rounded-3xl shadow-2xl overflow-hidden text-[#f7f6f2] flex flex-col max-h-[92vh]"
         >
           {/* Top Banner Stamp */}
-          <div className="bg-gradient-to-r from-[#8b0000] to-[#b22222] px-5 sm:px-6 py-3 flex items-center justify-between border-b border-[#d4af37]/40 shrink-0">
+          <div className="bg-gradient-to-r from-[#8b0000] via-[#a30000] to-[#b22222] px-5 sm:px-6 py-3 flex items-center justify-between border-b border-[#d4af37]/40 shrink-0 shadow-md">
             <div className="flex items-center gap-2.5">
               <Flame className="w-5 h-5 text-[#ffd700] animate-bounce shrink-0" />
-              <span className="font-military font-black text-xs sm:text-sm uppercase tracking-wider text-[#ffd700]">
+              <span className="font-military font-black text-xs sm:text-sm uppercase tracking-wider text-[#ffd700] drop-shadow-sm">
                 CHIẾN CÔNG PHÒNG KHÔNG · 12 NGÀY ĐÊM 1972
               </span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-black/50 rounded-full border border-[#ffd700]/40 font-military text-xs text-[#ffd700] font-black shadow-sm">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-black/50 rounded-full border border-[#ffd700]/40 font-military text-xs text-[#ffd700] font-black shadow-inner">
               <Award className="w-3.5 h-3.5" /> +{plane.baseScore} ĐIỂM
             </div>
           </div>
 
           {/* Linear Progress Bar */}
-          <div className="w-full bg-black/60 h-1.5 shrink-0 overflow-hidden">
+          <div className="w-full bg-black/70 h-1.5 shrink-0 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-yellow-500 to-emerald-400 transition-all duration-1000 ease-linear"
+              className="h-full bg-gradient-to-r from-yellow-500 via-amber-400 to-emerald-400 transition-all duration-1000 ease-linear shadow-sm"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -132,13 +138,13 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
           {/* Body Content */}
           <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
             {/* Plane Header Info Card */}
-            <div className="bg-black/50 p-4 rounded-2xl border border-[#d4af37]/50 space-y-2 shadow-inner">
+            <div className="bg-black/60 p-4 rounded-2xl border border-[#d4af37]/40 space-y-2.5 shadow-inner">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className={`px-2.5 py-0.5 rounded-full border text-[11px] font-military font-bold ${typeBadge.color}`}>
+                <span className={`px-3 py-0.5 rounded-full border text-[11px] font-military font-bold shadow-sm ${typeBadge.color}`}>
                   {typeBadge.label}
                 </span>
                 {plane.serialNumber && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-black/70 border border-yellow-500/40 text-yellow-300 font-mono text-[11px] font-bold">
+                  <span className="px-3 py-0.5 rounded-full bg-black/80 border border-yellow-500/50 text-yellow-300 font-mono text-[11px] font-bold shadow-sm">
                     SỐ HIỆU: {plane.serialNumber}
                   </span>
                 )}
@@ -154,7 +160,7 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
               </div>
 
               {/* Role & Bomb payload banner */}
-              <div className="p-2.5 bg-red-950/40 border border-red-500/30 rounded-xl text-xs font-military text-red-200 flex items-start gap-2">
+              <div className="p-2.5 bg-red-950/50 border border-red-500/30 rounded-xl text-xs font-military text-red-200 flex items-start gap-2">
                 <Bomb className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-yellow-300">Vai trò / Sức công phá: </span>
@@ -163,9 +169,49 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
               </div>
             </div>
 
+            {/* Real Historical Photo Section */}
+            <div className="relative rounded-2xl overflow-hidden border-2 border-[#d4af37]/40 bg-black/80 group">
+              <div className="relative h-44 sm:h-52 w-full flex items-center justify-center bg-black/60">
+                {!imageError ? (
+                  <>
+                    <img
+                      src={plane.imageUrl}
+                      alt={plane.name}
+                      onLoad={() => setImageLoaded(true)}
+                      onError={() => setImageError(true)}
+                      className={`w-full h-full object-cover object-center transition-all duration-700 ${
+                        imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                      }`}
+                    />
+                    {!imageLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center gap-2 text-yellow-500 font-military text-xs animate-pulse">
+                        <Camera className="w-5 h-5 animate-spin" /> Đang tải ảnh tư liệu lịch sử...
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-6 text-gray-400 font-military text-xs gap-2">
+                    <Plane className="w-12 h-12 text-yellow-500/40" />
+                    <span>Ảnh tư liệu: {plane.name}</span>
+                  </div>
+                )}
+                {/* Photo Vignette Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
+                {/* Historical Archival Stamp */}
+                <div className="absolute top-2.5 right-2.5 px-2.5 py-1 bg-black/80 backdrop-blur-md rounded-lg border border-[#d4af37]/40 text-[10px] font-military font-bold text-yellow-300 flex items-center gap-1.5 shadow-md">
+                  <Camera className="w-3.5 h-3.5 text-yellow-400" /> ẢNH TƯ LIỆU QUÂN SỰ
+                </div>
+                {/* Caption Bar */}
+                <div className="absolute bottom-2 left-3 right-3 text-[11px] font-military text-gray-200 truncate">
+                  <span className="text-yellow-400 font-bold">Tư liệu: </span>
+                  {plane.imageCaption}
+                </div>
+              </div>
+            </div>
+
             {/* Time & Credited Unit Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-military text-xs">
-              <div className="p-3 bg-black/35 rounded-2xl border border-white/10 flex items-start gap-2.5">
+              <div className="p-3 bg-black/40 rounded-2xl border border-white/10 flex items-start gap-2.5">
                 <Clock className="w-4 h-4 text-[#ffd700] shrink-0 mt-0.5" />
                 <div>
                   <span className="text-gray-400 block text-[11px]">NGÀY BỊ BẮN RƠI</span>
@@ -173,7 +219,7 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-black/35 rounded-2xl border border-white/10 flex items-start gap-2.5">
+              <div className="p-3 bg-black/40 rounded-2xl border border-white/10 flex items-start gap-2.5">
                 <Crosshair className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="text-gray-400 block text-[11px]">ĐƠN VỊ LẬP CÔNG</span>
@@ -183,7 +229,7 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
             </div>
 
             {/* Historical Context Description */}
-            <div className="p-4 bg-[#141b12] rounded-2xl border border-[#44563a] space-y-2">
+            <div className="p-4 bg-[#121910] rounded-2xl border border-[#44563a] space-y-2 shadow-sm">
               <div className="flex items-center gap-2 text-xs font-military font-bold text-[#d4af37] uppercase">
                 <FileText className="w-4 h-4" /> DIỄN BIẾN CHIẾN CÔNG LỊCH SỬ
               </div>
@@ -193,24 +239,24 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
             </div>
 
             {/* Specs Grid */}
-            <div className="p-3.5 bg-black/30 rounded-2xl border border-white/10 space-y-2">
+            <div className="p-3.5 bg-black/35 rounded-2xl border border-white/10 space-y-2">
               <span className="text-[11px] font-military font-bold text-gray-400 uppercase block">
                 THÔNG SỐ KỸ THUẬT QUÂN SỰ
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono text-gray-300">
-                <div className="bg-black/40 p-2 rounded-xl border border-white/5">
+                <div className="bg-black/50 p-2 rounded-xl border border-white/5">
                   <span className="text-gray-500 block text-[10px]">XUẤT XỨ</span>
                   <strong className="text-white truncate block">{plane.specs.origin}</strong>
                 </div>
-                <div className="bg-black/40 p-2 rounded-xl border border-white/5">
+                <div className="bg-black/50 p-2 rounded-xl border border-white/5">
                   <span className="text-gray-500 block text-[10px]">TỐC ĐỘ</span>
                   <strong className="text-yellow-400 truncate block">{plane.specs.maxSpeed}</strong>
                 </div>
-                <div className="bg-black/40 p-2 rounded-xl border border-white/5">
+                <div className="bg-black/50 p-2 rounded-xl border border-white/5">
                   <span className="text-gray-500 block text-[10px]">SẢI CÁNH</span>
                   <strong className="text-white truncate block">{plane.specs.wingspan}</strong>
                 </div>
-                <div className="bg-black/40 p-2 rounded-xl border border-white/5">
+                <div className="bg-black/50 p-2 rounded-xl border border-white/5">
                   <span className="text-gray-500 block text-[10px]">TẢI BOM</span>
                   <strong className="text-orange-400 truncate block">{plane.specs.bombLoad}</strong>
                 </div>
@@ -219,7 +265,7 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
           </div>
 
           {/* Bottom Action Footer */}
-          <div className="p-4 bg-black/50 border-t border-[#44563a] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+          <div className="p-4 bg-black/60 border-t border-[#44563a] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
             <div className="text-xs font-military text-gray-400 text-center sm:text-left">
               {canProceed ? (
                 <span className="text-emerald-400 flex items-center gap-1.5 font-bold">
@@ -227,7 +273,7 @@ export const PlaneDossierModal: React.FC<PlaneDossierModalProps> = ({
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-yellow-300 font-bold">
-                  <Lock className="w-4 h-4 text-yellow-400" /> Bắt buộc đọc tư liệu: còn {timeLeft} giây...
+                  <Lock className="w-4 h-4 text-yellow-400 animate-pulse" /> Bắt buộc đọc tư liệu: còn {timeLeft} giây...
                 </span>
               )}
             </div>
