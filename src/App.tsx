@@ -288,13 +288,13 @@ export default function App() {
     setActiveDossierPlane(null);
   };
 
-  // Add Ammo from Q&A Reload
+  // Add Ammo from Q&A Reload (Fixed 5-Question Batch)
   const handleAddAmmo = (shells37mm: number, flakBonus: number) => {
     setAmmo37mm((prev) => prev + shells37mm);
     setAmmoFlak((prev) => prev + flakBonus);
-    setQuestionsAnswered((prev) => prev + 1);
+    setQuestionsAnswered((prev) => prev + 5);
     if (appMode === 'STUDENT_PLAYING') {
-      syncToConvex(`Đã nạp ${shells37mm} viên đạn pháo 37mm!`);
+      syncToConvex(`Đã hoàn thành 5 câu hỏi lịch sử, nạp +${shells37mm} đạn 37mm!`);
     }
   };
 
