@@ -59,6 +59,7 @@ export default function App() {
 
   // Modals
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
+  const [quizQuestionOffset, setQuizQuestionOffset] = useState<number>(0);
   const [activeDossierPlane, setActiveDossierPlane] = useState<HistoricalPlane | null>(null);
   const [isRulesOpen, setIsRulesOpen] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -243,6 +244,7 @@ export default function App() {
       setPlanesDownedCount(0);
       setShotsFired(0);
       setQuestionsAnswered(0);
+      setQuizQuestionOffset(0);
       setAmmo37mm(10);
       setAmmoFlak(2);
       setTimeRemaining(res.room?.durationSeconds || INITIAL_TIME);
@@ -288,11 +290,12 @@ export default function App() {
     setActiveDossierPlane(null);
   };
 
-  // Add Ammo from Q&A Reload (Fixed 5-Question Batch)
+  // Add Ammo from Q&A Reload (Fixed 5-Question Batch, rolling across 50 questions)
   const handleAddAmmo = (shells37mm: number, flakBonus: number) => {
     setAmmo37mm((prev) => prev + shells37mm);
     setAmmoFlak((prev) => prev + flakBonus);
     setQuestionsAnswered((prev) => prev + 5);
+    setQuizQuestionOffset((prev) => (prev + 5) % 50);
     if (appMode === 'STUDENT_PLAYING') {
       syncToConvex(`Đã hoàn thành 5 câu hỏi lịch sử, nạp +${shells37mm} đạn 37mm!`);
     }
@@ -648,10 +651,11 @@ export default function App() {
             />
           </div>
 
-          {/* Q&A Reload Modal */}
+          {/* Q&A Reload Modal (Rolling across 50 questions) */}
           {isQuizOpen && (
             <QuizModal
               isOpen={isQuizOpen}
+              questionOffset={quizQuestionOffset}
               onCloseToBattle={() => setIsQuizOpen(false)}
               onAddAmmo={handleAddAmmo}
               currentAmmo={ammo37mm}
