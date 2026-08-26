@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useEffect, useState, useCallback, useId } from 'react';
+import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import {
   Users,
@@ -7,20 +7,16 @@ import {
   Play,
   Copy,
   Check,
-  Flame,
-  Target,
-  Award,
   Crown,
   Clock,
-  Sparkles,
   Radio,
   RotateCcw,
-  Zap,
-  Star,
   Maximize2,
   QrCode,
   X,
-  LogOut
+  LogOut,
+  Sliders,
+  Plus
 } from 'lucide-react';
 
 export interface RoomPlayer {
@@ -50,8 +46,10 @@ interface TeacherHostViewProps {
   logs: BattleLog[];
   status: 'waiting' | 'playing' | 'finished';
   durationSeconds: number;
+  startedAt?: number;
   onStartGame: () => void;
   onFinishGame: () => void;
+  onUpdateDuration?: (newDurationSeconds: number) => void;
   onExit: () => void;
 }
 
@@ -61,14 +59,17 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
   logs,
   status,
   durationSeconds,
+  startedAt,
   onStartGame,
   onFinishGame,
+  onUpdateDuration,
   onExit,
 }) => {
   const [copiedPin, setCopiedPin] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showLargeQr, setShowLargeQr] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(durationSeconds);
+  const [customMinutes, setCustomMinutes] = useState<string>(Math.round(durationSeconds / 60).toString());
+  const customMinutesInputId = useId();
 
   // Filter student players (exclude host from competition table)
   const studentPlayers = players.filter((p) => !p.isHost).sort((a, b) => b.score - a.score);
@@ -77,24 +78,51 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
   const joinLink = `${window.location.origin}${window.location.pathname}?code=${roomCode}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(joinLink)}`;
 
-  // Timer in playing status
+  // ═══ 1. CALCULATE TIME REMAINING FROM REAL SERVER TIMESTAMP ═══
+  // Tránh hoàn toàn lỗi bị đứng giờ hoặc bị reset về 3p khi chuyển tab / thu nhỏ trình duyệt
+  const calculateRemaining = useCallback(() => {
+    if (status !== 'playing' || !startedAt) {
+      return durationSeconds;
+    }
+    const elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
+    const rem = durationSeconds - elapsedSec;
+    return Math.max(0, rem);
+  }, [status, startedAt, durationSeconds]);
+
+  const [timeLeft, setTimeLeft] = useState<number>(() => calculateRemaining());
+
   useEffect(() => {
-    if (status !== 'playing') return;
-    setTimeLeft(durationSeconds);
+    if (status !== 'playing') {
+      setTimeLeft(durationSeconds);
+      return;
+    }
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onFinishGame();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const checkTimer = () => {
+      const current = calculateRemaining();
+      setTimeLeft(current);
+      if (current <= 0) {
+        onFinishGame();
+      }
+    };
 
-    return () => clearInterval(timer);
-  }, [status, durationSeconds, onFinishGame]);
+    checkTimer();
+    const timer = setInterval(checkTimer, 500);
+
+    // Kích hoạt tính toán lại tức thì khi người dùng quay lại tab trình duyệt
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkTimer();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', checkTimer);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', checkTimer);
+    };
+  }, [status, startedAt, durationSeconds, calculateRemaining, onFinishGame]);
 
   // Trigger Podium Confetti
   useEffect(() => {
@@ -126,10 +154,36 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Change duration preset
+  const handleSelectDuration = (seconds: number) => {
+    setCustomMinutes(Math.round(seconds / 60).toString());
+    if (onUpdateDuration) {
+      onUpdateDuration(seconds);
+    }
+  };
+
+  // Apply custom typed minutes
+  const handleApplyCustomMinutes = () => {
+    const parsed = parseInt(customMinutes, 10);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
+      const newSec = parsed * 60;
+      if (onUpdateDuration) {
+        onUpdateDuration(newSec);
+      }
+    }
+  };
+
+  // Extend duration during match (+1 min / +2 mins)
+  const handleExtendMatch = (additionalSeconds: number) => {
+    if (onUpdateDuration) {
+      onUpdateDuration(durationSeconds + additionalSeconds);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-[#0d120c] text-[#f7f6f2] flex flex-col font-sans select-none overflow-hidden camo-gradient trench-texture">
       {/* ═══ TOP CONTROL BAR ═══ */}
-      <header className="bg-[#121a10]/95 border-b border-[#44563a] px-6 py-3 flex items-center justify-between shadow-xl shrink-0">
+      <header className="bg-[#121a10]/95 border-b border-[#44563a] px-4 sm:px-6 py-3 flex items-center justify-between shadow-xl shrink-0 gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[#8b0000] border border-[#ffd700]/60 flex items-center justify-center font-black text-[#ffd700] shadow-md shadow-red-950/50">
             ★
@@ -139,42 +193,62 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#8b0000] text-[#ffd700] font-military font-bold border border-[#ffd700]/40">
                 MÁY CHIẾU LỚP HỌC
               </span>
-              <h1 className="text-base font-black font-military text-white tracking-wide">
+              <h1 className="text-sm sm:text-base font-black font-military text-white tracking-wide truncate max-w-[200px] sm:max-w-none">
                 ĐẤU TRƯỜNG PHÒNG KHÔNG ĐIỆN BIÊN PHỦ
               </h1>
             </div>
-            <span className="text-xs text-gray-400 font-military">
+            <span className="text-xs text-gray-400 font-military hidden md:inline">
               Trận địa pháo cao xạ 37mm · Khống chế bầu trời Mường Thanh 1954
             </span>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {status === 'waiting' && (
             <button
               onClick={onStartGame}
               disabled={studentPlayers.length === 0}
-              className={`px-6 py-2.5 rounded-xl font-military font-black text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer ${
+              className={`px-4 sm:px-6 py-2.5 rounded-xl font-military font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer ${
                 studentPlayers.length > 0
                   ? 'bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white shadow-red-950/60 hover:scale-105 animate-pulse'
                   : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-white/10'
               }`}
             >
               <Play className="w-4 h-4 fill-current text-[#ffd700]" />
-              BẮT ĐẦU TRẬN ĐẤU CẢ LỚP ({studentPlayers.length} CHIẾN SĨ)
+              <span>BẮT ĐẦU TRẬN ĐẤU ({studentPlayers.length} CHIẾN SĨ)</span>
             </button>
           )}
 
           {status === 'playing' && (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-black/60 border border-[#d4af37]/60 text-[#ffd700] font-mono text-xl font-black">
-                <Clock className="w-5 h-5 text-red-500 animate-pulse" />
-                {formatTime(timeLeft)}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Big Projected Clock */}
+              <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-black/70 border border-[#d4af37]/60 text-[#ffd700] font-mono text-lg sm:text-xl font-black">
+                <Clock className={`w-5 h-5 ${timeLeft <= 30 ? 'text-red-500 animate-pulse' : 'text-[#ffd700]'}`} />
+                <span>{formatTime(timeLeft)}</span>
               </div>
+
+              {/* Quick Extend Buttons for Teacher */}
+              <button
+                onClick={() => handleExtendMatch(60)}
+                className="px-2.5 py-1.5 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 text-xs font-military font-bold flex items-center gap-1 transition-all"
+                title="Cộng thêm 1 phút thi đấu"
+              >
+                <Plus className="w-3.5 h-3.5" /> 1P
+              </button>
+
+              <button
+                onClick={() => handleExtendMatch(120)}
+                className="px-2.5 py-1.5 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 text-xs font-military font-bold flex items-center gap-1 transition-all"
+                title="Cộng thêm 2 phút thi đấu"
+              >
+                <Plus className="w-3.5 h-3.5" /> 2P
+              </button>
+
+              {/* Early Finish */}
               <button
                 onClick={onFinishGame}
-                className="px-4 py-2 rounded-xl bg-red-900/60 hover:bg-red-900 border border-red-500/50 text-red-200 font-military text-xs font-bold transition-all cursor-pointer"
+                className="px-3 sm:px-4 py-2 rounded-xl bg-red-900/60 hover:bg-red-900 border border-red-500/50 text-red-200 font-military text-xs font-bold transition-all cursor-pointer"
               >
                 KẾT THÚC SỚM
               </button>
@@ -184,7 +258,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
           {status === 'finished' && (
             <button
               onClick={onStartGame}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-600 hover:to-emerald-700 text-white font-military font-bold text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer"
+              className="px-4 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-700 to-emerald-800 hover:from-emerald-600 hover:to-emerald-700 text-white font-military font-bold text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer"
             >
               <RotateCcw className="w-4 h-4 text-yellow-300" /> TÁI ĐẤU LƯỢT MỚI
             </button>
@@ -202,27 +276,27 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
 
       {/* ═══ 1. LOBBY VIEW (WAITING FOR STUDENTS TO JOIN) ═══ */}
       {status === 'waiting' && (
-        <main className="flex-1 flex flex-col justify-between p-6 sm:p-10 overflow-y-auto">
-          {/* Giant PIN & QR Area */}
-          <div className="max-w-4xl w-full mx-auto text-center space-y-6 my-auto">
-            <div className="space-y-2">
+        <main className="flex-1 flex flex-col justify-between p-4 sm:p-8 overflow-y-auto">
+          <div className="max-w-4xl w-full mx-auto text-center space-y-5 my-auto">
+            {/* Header info */}
+            <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-military font-bold text-xs uppercase tracking-widest">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 PHÒNG CHỜ CHIẾN SĨ · SẴN SÀNG XUẤT KÍCH
               </div>
-              <h2 className="text-xl sm:text-2xl font-military font-bold text-gray-200">
-                Học sinh truy cập web, quét QR hoặc nhập mã PIN bên dưới:
+              <h2 className="text-lg sm:text-xl font-military font-bold text-gray-200">
+                Học sinh quét mã QR hoặc nhập mã PIN trên máy chiếu để tham gia:
               </h2>
             </div>
 
             {/* Giant PIN Banner & Buttons */}
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6 bg-[#1c2419]/90 border-2 border-[#ffd700] rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 bg-[#1c2419]/90 border-2 border-[#ffd700] rounded-3xl p-5 sm:p-7 shadow-2xl backdrop-blur-md">
               {/* QR Code Container */}
               <div
                 onClick={() => setShowLargeQr(true)}
                 className="bg-white p-3 rounded-2xl border-2 border-emerald-500/60 shadow-lg cursor-pointer hover:scale-105 transition-all group relative shrink-0"
               >
-                <img src={qrUrl} alt="Mã QR tham gia" className="w-36 h-36 object-contain" />
+                <img src={qrUrl} alt="Mã QR tham gia" className="w-32 h-32 sm:w-36 sm:h-36 object-contain" />
                 <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-bold gap-1 font-military">
                   <Maximize2 className="w-5 h-5 text-yellow-400" />
                   <span>Phóng to QR</span>
@@ -230,7 +304,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
               </div>
 
               {/* PIN Code Box & Copy Controls */}
-              <div className="space-y-4 text-center md:text-left">
+              <div className="space-y-3.5 text-center md:text-left">
                 <div>
                   <span className="text-xs uppercase font-military tracking-widest text-gray-400 block mb-1">
                     MÃ PIN THAM GIA PHÒNG:
@@ -240,10 +314,10 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                   <button
                     onClick={handleCopyPin}
-                    className="px-4 py-2 rounded-xl bg-black/60 hover:bg-black/80 border border-white/20 text-[#ffd700] font-military font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-black/60 hover:bg-black/80 border border-white/20 text-[#ffd700] font-military font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
                   >
                     {copiedPin ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                     {copiedPin ? 'ĐÃ SAO CHÉP PIN' : 'SAO CHÉP PIN'}
@@ -251,7 +325,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
 
                   <button
                     onClick={handleCopyLink}
-                    className="px-4 py-2 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 font-military font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 font-military font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
                   >
                     {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <QrCode className="w-4 h-4" />}
                     {copiedLink ? 'ĐÃ SAO CHÉP LINK' : 'SAO CHÉP LINK MỜI'}
@@ -259,11 +333,68 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
 
                   <button
                     onClick={() => setShowLargeQr(true)}
-                    className="px-3.5 py-2 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 text-gray-300 font-military text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-3 py-2 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 text-gray-300 font-military text-xs flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <Maximize2 className="w-3.5 h-3.5" /> Phóng To QR
+                    <Maximize2 className="w-3.5 h-3.5" /> Phóng To
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* ⏱️ THIẾT LẬP THỜI LƯỢNG TRẬN ĐẤU CHO GIẢNG VIÊN (3P, 5P, 10P, 15P HOẶC TỰ NHẬP) */}
+            <div className="bg-[#1c2419]/90 border border-[#44563a] rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 font-military">
+              <div className="flex items-center gap-2 text-yellow-300 text-xs font-bold">
+                <Sliders className="w-4 h-4 text-[#ffd700]" />
+                <span>THỜI LƯỢNG TRẬN ĐẤU:</span>
+              </div>
+
+              {/* Preset Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {[
+                  { label: '3 Phút', sec: 180 },
+                  { label: '5 Phút', sec: 300 },
+                  { label: '10 Phút', sec: 600 },
+                  { label: '15 Phút', sec: 900 },
+                  { label: '20 Phút', sec: 1200 },
+                ].map((preset) => {
+                  const isSelected = durationSeconds === preset.sec;
+                  return (
+                    <button
+                      key={preset.sec}
+                      onClick={() => handleSelectDuration(preset.sec)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#8b0000] text-[#ffd700] border border-[#ffd700] shadow-md shadow-red-950/60 scale-105'
+                          : 'bg-black/40 text-gray-300 hover:bg-black/60 border border-white/10'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Input Box for Teacher */}
+              <div className="flex items-center gap-2">
+                <label htmlFor={customMinutesInputId} className="sr-only">
+                  Nhập số phút
+                </label>
+                <input
+                  id={customMinutesInputId}
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={customMinutes}
+                  onChange={(e) => setCustomMinutes(e.target.value)}
+                  placeholder="Phút"
+                  className="w-16 bg-black/60 border border-white/20 rounded-xl px-2.5 py-1 text-xs font-mono text-center text-yellow-300 focus:outline-none focus:border-[#ffd700]"
+                />
+                <button
+                  onClick={handleApplyCustomMinutes}
+                  className="px-3 py-1 bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/50 rounded-xl text-emerald-300 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  LƯU
+                </button>
               </div>
             </div>
 
@@ -280,7 +411,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
               </div>
 
               {/* Student Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-56 overflow-y-auto p-1 custom-scrollbar">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-48 overflow-y-auto p-1 custom-scrollbar">
                 {studentPlayers.map((player, idx) => (
                   <motion.div
                     key={player._id}
@@ -304,13 +435,13 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
 
       {/* ═══ 2. LIVE BATTLE ARENA (PLAYING STATUS) ═══ */}
       {status === 'playing' && (
-        <main className="flex-1 p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
+        <main className="flex-1 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
           {/* CỘT TRÁI (2/3 MÀN HÌNH): LIVE LEADERBOARD */}
-          <div className="lg:col-span-2 bg-[#1c2419]/95 border-2 border-[#d4af37] rounded-3xl p-6 shadow-2xl flex flex-col justify-between overflow-hidden">
+          <div className="lg:col-span-2 bg-[#1c2419]/95 border-2 border-[#d4af37] rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between overflow-hidden">
             <div className="flex items-center justify-between border-b border-[#44563a] pb-3 mb-4 shrink-0">
               <div className="flex items-center gap-2">
                 <Trophy className="w-6 h-6 text-[#ffd700]" />
-                <h2 className="text-xl font-black font-military text-white tracking-wide">
+                <h2 className="text-lg sm:text-xl font-black font-military text-white tracking-wide">
                   BẢNG XẾP HẠNG THỜI GIAN THỰC (REALTIME)
                 </h2>
               </div>
@@ -330,7 +461,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                   <motion.div
                     key={player._id}
                     layout
-                    className={`p-3.5 rounded-2xl border flex items-center justify-between gap-4 font-military transition-all ${
+                    className={`p-3 sm:p-3.5 rounded-2xl border flex items-center justify-between gap-4 font-military transition-all ${
                       isTop1
                         ? 'bg-gradient-to-r from-[#8b0000]/70 to-[#b22222]/50 border-[#ffd700] shadow-lg shadow-red-950/50'
                         : isTop2
@@ -369,7 +500,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                     </div>
 
                     {/* Stats */}
-                    <div className="flex items-center gap-4 shrink-0 font-mono text-xs sm:text-sm">
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 font-mono text-xs sm:text-sm">
                       <div className="text-right hidden sm:block">
                         <span className="text-gray-400 text-[10px] block">MÁY BAY HẠ</span>
                         <span className="font-bold text-orange-400">{player.planesDowned}</span>
@@ -378,7 +509,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                         <span className="text-gray-400 text-[10px] block">CHÍNH XÁC</span>
                         <span className="font-bold text-emerald-400">{player.accuracy}%</span>
                       </div>
-                      <div className="text-right bg-black/40 px-3.5 py-1.5 rounded-xl border border-white/10">
+                      <div className="text-right bg-black/40 px-3 sm:px-3.5 py-1.5 rounded-xl border border-white/10">
                         <span className="text-[10px] text-gray-400 block">ĐIỂM SỐ</span>
                         <span className="font-black text-base sm:text-lg text-[#ffd700]">
                           {player.score}
@@ -392,7 +523,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
           </div>
 
           {/* CỘT PHẢI (1/3 MÀN HÌNH): LIVE BATTLE LOGS */}
-          <div className="bg-[#1c2419]/95 border border-[#44563a] rounded-3xl p-6 shadow-2xl flex flex-col justify-between overflow-hidden">
+          <div className="bg-[#1c2419]/95 border border-[#44563a] rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between overflow-hidden">
             <div className="flex items-center gap-2 border-b border-[#44563a] pb-3 mb-4 shrink-0">
               <Radio className="w-5 h-5 text-red-500 animate-pulse" />
               <h3 className="text-base font-black font-military text-white">
@@ -424,7 +555,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
       {status === 'finished' && (
         <main className="flex-1 p-6 flex flex-col justify-between overflow-y-auto">
           <div className="max-w-4xl w-full mx-auto space-y-8 my-auto text-center">
-            {/* Title */}
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-5 py-1 rounded-full bg-[#8b0000] border border-[#ffd700] text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-xl">
                 ★ TOÀN THẮNG CHIẾN DỊCH ĐIỆN BIÊN PHỦ ★

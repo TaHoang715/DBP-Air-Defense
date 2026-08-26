@@ -14,7 +14,7 @@ export const createRoom = mutation({
       code: pin,
       hostName: args.hostName.trim(),
       status: "waiting",
-      durationSeconds: args.durationSeconds ?? 180,
+      durationSeconds: args.durationSeconds ?? 300, // Default 5 minutes
     });
 
     // Tạo bản ghi Host
@@ -205,6 +205,19 @@ export const finishRoomBattle = mutation({
       message: "HẾT GIỜ! TOÀN THẮNG CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954!",
       type: "medal",
       timestamp: Date.now(),
+    });
+  },
+});
+
+// 7. Giảng viên cập nhật thời lượng trận đấu (3p, 5p, 10p, 15p hoặc tùy chỉnh)
+export const updateRoomDuration = mutation({
+  args: {
+    roomId: v.id("dbpRooms"),
+    durationSeconds: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.roomId, {
+      durationSeconds: Math.max(30, args.durationSeconds),
     });
   },
 });

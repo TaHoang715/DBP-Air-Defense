@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useId } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import type { Id } from '../convex/_generated/dataModel';
@@ -19,10 +19,12 @@ import {
   LogIn,
   ScrollText,
   AlertCircle,
-  X
+  X,
+  Clock,
+  Sliders
 } from 'lucide-react';
 
-const INITIAL_TIME = 180; // 3 minutes battle session
+const INITIAL_TIME = 300; // 5 minutes default battle session
 
 export default function App() {
   // Game Mode: 'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'
@@ -50,8 +52,11 @@ export default function App() {
   const [showAdminLoginModal, setShowAdminLoginModal] = useState<boolean>(false);
   const [adminUsername, setAdminUsername] = useState<string>('');
   const [adminPassword, setAdminPassword] = useState<string>('');
-  const [adminDuration, setAdminDuration] = useState<number>(180);
+  const [adminDuration, setAdminDuration] = useState<number>(300); // 5 minutes default
+  const [isCustomDuration, setIsCustomDuration] = useState<boolean>(false);
+  const [customDurationMinutes, setCustomDurationMinutes] = useState<string>('5');
   const [adminError, setAdminError] = useState<string>('');
+  const customDurationInputId = useId();
 
   // Student Join State: Auto-fill from URL query param ?code=195401 or ?room=195401
   const [studentPin, setStudentPin] = useState<string>(() => {
@@ -77,6 +82,7 @@ export default function App() {
   const startRoomBattleMutation = useMutation(api.rooms.startRoomBattle);
   const syncPlayerProgressMutation = useMutation(api.rooms.syncPlayerProgress);
   const finishRoomBattleMutation = useMutation(api.rooms.finishRoomBattle);
+  const updateRoomDurationMutation = useMutation(api.rooms.updateRoomDuration);
 
   // Realtime Live Room Subscription
   const roomLiveState = useQuery(
@@ -102,27 +108,44 @@ export default function App() {
     if (appMode === 'STUDENT_PLAYING' && roomStatus === 'finished') {
       setAppMode('DEBRIEF');
     }
-  }, [roomLiveState?.room?.status, appMode]);
+  }, [roomLiveState?.room?.status, appMode, roomLiveState?.room?.durationSeconds]);
 
-  // ═══ 2. BATTLE COUNTDOWN TIMER ═══
+  // ═══ 2. SYNCHRONIZED COUNTDOWN TIMER FOR STUDENTS ═══
+  // Sử dụng timestamp thực tế từ Convex Server để chống hoàn toàn lỗi dừng/reset khi chuyển tab
   useEffect(() => {
-    if (appMode !== 'STUDENT_PLAYING' || isPaused || activeDossierPlane !== null || isQuizOpen) return;
+    if (appMode !== 'STUDENT_PLAYING') return;
 
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setAppMode('DEBRIEF');
-          return 0;
-        }
-        return prev - 1;
-      });
+    const startedAt = roomLiveState?.room?.startedAt || Date.now();
+    const totalDuration = roomLiveState?.room?.durationSeconds || INITIAL_TIME;
 
-      setElapsedSeconds((prev) => prev + 1);
-    }, 1000);
+    const updateStudentTimer = () => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const remaining = Math.max(0, totalDuration - elapsed);
+      setTimeRemaining(remaining);
+      setElapsedSeconds(elapsed);
 
-    return () => clearInterval(timer);
-  }, [appMode, isPaused, activeDossierPlane, isQuizOpen]);
+      if (remaining <= 0) {
+        setAppMode('DEBRIEF');
+      }
+    };
+
+    updateStudentTimer();
+    const timer = setInterval(updateStudentTimer, 500);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateStudentTimer();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', updateStudentTimer);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', updateStudentTimer);
+    };
+  }, [appMode, roomLiveState?.room?.startedAt, roomLiveState?.room?.durationSeconds]);
 
   // ═══ 3. SYNC STUDENT PROGRESS TO CONVEX IN REALTIME ═══
   const syncToConvex = useCallback((recentEventText?: string, isDone = false) => {
@@ -158,9 +181,19 @@ export default function App() {
       return;
     }
 
+    let finalDuration = adminDuration;
+    if (isCustomDuration) {
+      const parsed = parseInt(customDurationMinutes, 10);
+      if (isNaN(parsed) || parsed <= 0 || parsed > 120) {
+        setAdminError('Thời lượng tùy chỉnh phải từ 1 đến 120 phút!');
+        return;
+      }
+      finalDuration = parsed * 60;
+    }
+
     try {
       const hostDisplay = adminUsername.trim() || 'Giảng Viên';
-      const res = await createRoomMutation({ hostName: hostDisplay, durationSeconds: Number(adminDuration) || 180 });
+      const res = await createRoomMutation({ hostName: hostDisplay, durationSeconds: finalDuration });
       setCurrentRoomId(res.roomId);
       setCurrentRoomCode(res.code);
       setShowAdminLoginModal(false);
@@ -266,9 +299,11 @@ export default function App() {
           players={(roomLiveState?.players as any) || []}
           logs={(roomLiveState?.logs as any) || []}
           status={roomLiveState?.room?.status || 'waiting'}
-          durationSeconds={roomLiveState?.room?.durationSeconds || 180}
+          durationSeconds={roomLiveState?.room?.durationSeconds || 300}
+          startedAt={roomLiveState?.room?.startedAt}
           onStartGame={() => startRoomBattleMutation({ roomId: currentRoomId })}
           onFinishGame={() => finishRoomBattleMutation({ roomId: currentRoomId })}
+          onUpdateDuration={(newSec) => updateRoomDurationMutation({ roomId: currentRoomId, durationSeconds: newSec })}
           onExit={handleLeaveRoom}
         />
       )}
@@ -423,10 +458,10 @@ export default function App() {
         </div>
       )}
 
-      {/* ═══ 4. MODAL ĐĂNG NHẬP QUẢN TRÒ ═══ */}
+      {/* ═══ 4. MODAL ĐĂNG NHẬP QUẢN TRÒ (KÈM CHỌN/NHẬP THỜI LƯỢNG) ═══ */}
       {showAdminLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="w-full max-w-md bg-[#1c2419] border-2 border-[#ffd700] rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6 text-[#f7f6f2] relative">
+          <div className="w-full max-w-md bg-[#1c2419] border-2 border-[#ffd700] rounded-3xl shadow-2xl p-6 sm:p-8 space-y-5 text-[#f7f6f2] relative">
             <button
               onClick={() => setShowAdminLoginModal(false)}
               className="absolute top-5 right-5 p-2 rounded-xl bg-black/30 hover:bg-black/50 text-gray-300 hover:text-white transition-colors"
@@ -435,11 +470,11 @@ export default function App() {
             </button>
 
             {/* Header */}
-            <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-2xl bg-[#8b0000] text-[#ffd700] flex items-center justify-center mx-auto shadow-lg shadow-red-950/60 font-bold">
-                <Crown className="w-7 h-7" />
+            <div className="text-center space-y-1.5">
+              <div className="w-12 h-12 rounded-2xl bg-[#8b0000] text-[#ffd700] flex items-center justify-center mx-auto shadow-lg shadow-red-950/60 font-bold">
+                <Crown className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-black font-military text-white">
+              <h3 className="text-lg sm:text-xl font-black font-military text-white">
                 XÁC THỰC QUẢN TRÒ
               </h3>
               <p className="text-xs text-gray-300">
@@ -459,7 +494,7 @@ export default function App() {
                   onChange={(e) => setAdminUsername(e.target.value)}
                   placeholder="Nhập tên quản trò"
                   required
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-military text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ffd700]"
+                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2 text-xs sm:text-sm font-military text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ffd700]"
                 />
               </div>
 
@@ -473,23 +508,69 @@ export default function App() {
                   onChange={(e) => setAdminPassword(e.target.value)}
                   placeholder="Nhập mật khẩu"
                   required
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-mono text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ffd700]"
+                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2 text-xs sm:text-sm font-mono text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ffd700]"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-military text-gray-300">
-                  Thời lượng trận đánh:
-                </label>
-                <select
-                  value={adminDuration}
-                  onChange={(e) => setAdminDuration(Number(e.target.value))}
-                  className="w-full bg-black/50 border border-white/20 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-military text-yellow-400 focus:outline-none focus:border-[#ffd700]"
-                >
-                  <option value={180}>180 Giây (3 Phút - Tiêu chuẩn)</option>
-                  <option value={300}>300 Giây (5 Phút - Mở rộng)</option>
-                  <option value={120}>120 Giây (2 Phút - Nhanh)</option>
-                </select>
+              {/* ⏱️ THỜI LƯỢNG TRẬN ĐẤU (PRESETS + TÙY CHỌN NHẬP TAY) */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between text-xs font-military text-gray-300">
+                  <span className="flex items-center gap-1.5 text-yellow-300 font-bold">
+                    <Clock className="w-3.5 h-3.5" /> Thời Lượng Trận Đánh:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomDuration(!isCustomDuration)}
+                    className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
+                  >
+                    <Sliders className="w-3 h-3" />
+                    {isCustomDuration ? 'Dùng gợi ý có sẵn' : 'Tự nhập số phút'}
+                  </button>
+                </div>
+
+                {!isCustomDuration ? (
+                  <div className="grid grid-cols-4 gap-1.5 font-military">
+                    {[
+                      { label: '3P', sec: 180 },
+                      { label: '5P', sec: 300 },
+                      { label: '10P', sec: 600 },
+                      { label: '15P', sec: 900 },
+                    ].map((preset) => {
+                      const isSel = adminDuration === preset.sec;
+                      return (
+                        <button
+                          key={preset.sec}
+                          type="button"
+                          onClick={() => setAdminDuration(preset.sec)}
+                          className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            isSel
+                              ? 'bg-[#8b0000] text-[#ffd700] border border-[#ffd700] shadow-md shadow-red-950/60 font-black'
+                              : 'bg-black/40 text-gray-300 hover:bg-black/60 border border-white/10'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <label htmlFor={customDurationInputId} className="sr-only">
+                      Số phút thi đấu
+                    </label>
+                    <input
+                      id={customDurationInputId}
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={customDurationMinutes}
+                      onChange={(e) => setCustomDurationMinutes(e.target.value)}
+                      placeholder="Nhập số phút (vd: 7, 12, 20...)"
+                      className="flex-1 bg-black/60 border border-white/20 rounded-xl px-3 py-2 text-xs font-mono text-yellow-300 placeholder:text-gray-600 focus:outline-none focus:border-[#ffd700]"
+                    />
+                    <span className="text-xs font-military text-gray-300 font-bold">Phút</span>
+                  </div>
+                )}
               </div>
 
               {adminError && (
@@ -503,13 +584,13 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setShowAdminLoginModal(false)}
-                  className="flex-1 py-3 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 text-gray-300 font-military text-xs font-bold cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-black/40 hover:bg-black/60 border border-white/20 text-gray-300 font-military text-xs font-bold cursor-pointer"
                 >
                   HỦY BỎ
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-bold text-xs shadow-lg shadow-red-950/60 cursor-pointer"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-bold text-xs shadow-lg shadow-red-950/60 cursor-pointer"
                 >
                   TẠO PHÒNG
                 </button>
@@ -551,41 +632,42 @@ export default function App() {
               onNeedAmmo={() => setIsQuizOpen(true)}
             />
           </div>
+
+          {/* Q&A Reload Modal */}
+          {isQuizOpen && (
+            <QuizModal
+              onClose={() => setIsQuizOpen(false)}
+              onSuccessAddAmmo={handleAddAmmo}
+            />
+          )}
+
+          {/* Mandatory Plane Dossier Modal (Strict No-Skip) */}
+          {activeDossierPlane && (
+            <PlaneDossierModal
+              plane={activeDossierPlane}
+              onFinishReading={handleFinishedReadingDossier}
+            />
+          )}
         </div>
       )}
 
-      {/* ═══ 6. PHASE 1 QUIZ RELOAD MODAL ═══ */}
-      <QuizModal
-        isOpen={isQuizOpen}
-        currentAmmo={ammo37mm + ammoFlak}
-        onAddAmmo={handleAddAmmo}
-        onCloseToBattle={() => setIsQuizOpen(false)}
-      />
+      {/* ═══ 6. MÀN HÌNH TỔNG KẾT KẾT QUẢ CHO HỌC SINH (DEBRIEF / VICTORY) ═══ */}
+      {appMode === 'DEBRIEF' && (
+        <VictoryModal
+          score={score}
+          planesDownedCount={planesDownedCount}
+          shotsFired={shotsFired}
+          questionsAnswered={questionsAnswered}
+          roomPlayers={(roomLiveState?.players as any) || []}
+          onRestart={handleLeaveRoom}
+          onExit={handleLeaveRoom}
+        />
+      )}
 
-      {/* ═══ 7. PHASE 3 MANDATORY HISTORICAL DOSSIER MODAL (STRICT NO-SKIP) ═══ */}
-      <PlaneDossierModal
-        plane={activeDossierPlane}
-        countdownSeconds={6}
-        onFinishedReading={handleFinishedReadingDossier}
-      />
-
-      {/* ═══ 8. DEBRIEF / VICTORY MODAL (BẢNG XẾP HẠNG CỦA PHÒNG LỚP VỪA CHƠI) ═══ */}
-      <VictoryModal
-        isOpen={appMode === 'DEBRIEF'}
-        score={score}
-        planesDownedCount={planesDownedCount}
-        shotsFired={shotsFired}
-        questionsAnswered={questionsAnswered}
-        roomPlayers={(roomLiveState?.players as any) || []}
-        currentPlayerName={studentName}
-        onLeaveRoom={handleLeaveRoom}
-      />
-
-      {/* ═══ 9. RULES MODAL ═══ */}
-      <RulesModal
-        isOpen={isRulesOpen}
-        onClose={() => setIsRulesOpen(false)}
-      />
+      {/* ═══ 7. MODAL LUẬT CHƠI ═══ */}
+      {isRulesOpen && (
+        <RulesModal onClose={() => setIsRulesOpen(false)} />
+      )}
     </div>
   );
 }
