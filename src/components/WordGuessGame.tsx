@@ -204,7 +204,7 @@ function LobbyView({
             />
             <input
               type="password"
-              placeholder="Mật khẩu tạo phòng (Admin@123)"
+              placeholder="Nhập mật khẩu quản trò"
               value={hostPassword}
               onChange={(e) => setHostPassword(e.target.value)}
               className="w-full bg-black/60 border border-white/20 text-white py-3 px-4 rounded-xl font-military text-center text-sm focus:outline-none focus:border-[#ffd700]"
