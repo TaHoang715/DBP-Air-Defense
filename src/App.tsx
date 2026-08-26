@@ -55,11 +55,15 @@ export default function App() {
   const [activeGame, setActiveGame] = useState<'HUB' | 'AIR_DEFENSE_1972' | 'WORD_GUESS_1945'>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('code') || params.get('room')) {
-        return 'AIR_DEFENSE_1972'; // If user scanned QR code for multiplayer room, jump directly into Air Defense game
-      }
       if (params.get('game') === 'wordguess' || params.get('game') === 'doanchu') {
         return 'WORD_GUESS_1945';
+      }
+      const code = (params.get('code') || params.get('room') || '').trim();
+      if (code.length === 5) {
+        return 'WORD_GUESS_1945';
+      }
+      if (code.length === 6 || params.get('game') === 'airdefense') {
+        return 'AIR_DEFENSE_1972';
       }
     } catch {}
     return 'HUB';

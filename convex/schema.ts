@@ -49,13 +49,17 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_score", ["score"]),
 
-  // ═══ COMPATIBILITY TABLES WITH MLN-MASTER PROJECT ═══
+  // ═══ GAME 2 (LỊCH SỬ ĐẢNG 1945-1946) MULTIPLAYER TABLES ═══
   rooms: defineTable({
-    code: v.optional(v.string()),
-    status: v.optional(v.string()),
-    currentRound: v.optional(v.number()),
-    phase: v.optional(v.string()),
-    randomEvent: v.optional(v.union(v.string(), v.null())),
+    code: v.string(),
+    status: v.union(
+      v.literal("lobby"),
+      v.literal("playing"),
+      v.literal("finished")
+    ),
+    currentRound: v.number(),
+    phase: v.union(v.literal("choosing"), v.literal("results")),
+    randomEvent: v.union(v.string(), v.null()),
     hostName: v.optional(v.string()),
     durationSeconds: v.optional(v.number()),
     startedAt: v.optional(v.number()),
@@ -63,14 +67,14 @@ export default defineSchema({
   }).index("by_code", ["code"]),
 
   players: defineTable({
-    name: v.optional(v.string()),
-    roomId: v.optional(v.any()),
-    isHost: v.optional(v.boolean()),
+    name: v.string(),
+    roomId: v.id("rooms"),
+    isHost: v.boolean(),
     score: v.optional(v.number()),
     lastScoreIncrement: v.optional(v.number()),
-    currentChoice: v.optional(v.union(v.string(), v.null())),
-    isAlive: v.optional(v.boolean()),
-    hasSubmitted: v.optional(v.boolean()),
+    currentChoice: v.union(v.string(), v.null()),
+    isAlive: v.boolean(),
+    hasSubmitted: v.boolean(),
     money: v.optional(v.number()),
     alienation: v.optional(v.number()),
     freedom: v.optional(v.number()),
