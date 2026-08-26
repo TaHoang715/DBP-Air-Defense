@@ -308,6 +308,65 @@ class SoundEngine {
     }
     this.isBgmPlaying = false;
   }
+
+  // 8. Kèn Chiến Thắng Tôn Vinh Quán Quân / Bảng Xếp Hạng (Short Triumphant Victory Fanfare ~2.0s)
+  public playVictoryFanfare() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx || !this.masterGain) return;
+
+    // Tạm dừng BGM nếu đang phát để tiếng kèn vang lên trang trọng, rõ nét
+    this.stopBgm();
+
+    const now = this.ctx.currentTime;
+
+    // Chuỗi nốt kèn hùng tráng mừng chiến thắng: Đô - Son - Đô - Mi - Son - Đô cao (C5, G4, C5, E5, G5, C6)
+    const fanfareNotes = [
+      { freq: 523.25, time: 0, duration: 0.15 },    // C5
+      { freq: 392.00, time: 0.15, duration: 0.15 }, // G4
+      { freq: 523.25, time: 0.30, duration: 0.15 }, // C5
+      { freq: 659.25, time: 0.45, duration: 0.18 }, // E5
+      { freq: 783.99, time: 0.65, duration: 0.22 }, // G5
+      { freq: 1046.50, time: 0.90, duration: 1.1 }, // C6 (Ngân vang kết thúc)
+      { freq: 523.25, time: 0.90, duration: 1.1 },  // Hợp âm trầm C5
+      { freq: 659.25, time: 0.90, duration: 1.1 }   // Hợp âm trung E5
+    ];
+
+    fanfareNotes.forEach((note) => {
+      const noteStart = now + note.time;
+      const osc = this.ctx!.createOscillator();
+      const osc2 = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      const filter = this.ctx!.createBiquadFilter();
+
+      // Âm sắc kèn đồng (Brass)
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(note.freq, noteStart);
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(note.freq, noteStart);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(3200, noteStart);
+      filter.frequency.exponentialRampToValueAtTime(1400, noteStart + note.duration);
+
+      // Envelope âm lượng kèn đồng dứt khoát, hào hùng
+      gain.gain.setValueAtTime(0.01, noteStart);
+      gain.gain.linearRampToValueAtTime(0.35, noteStart + 0.03);
+      gain.gain.setValueAtTime(0.3, noteStart + note.duration * 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.001, noteStart + note.duration);
+
+      osc.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain!);
+
+      osc.start(noteStart);
+      osc2.start(noteStart);
+      osc.stop(noteStart + note.duration);
+      osc2.stop(noteStart + note.duration);
+    });
+  }
 }
 
 export const sound = new SoundEngine();

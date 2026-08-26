@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useId } from 'react';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { sound } from '../audio/SoundEngine';
 import {
   Users,
   Trophy,
@@ -127,9 +128,10 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
     };
   }, [status, startedAt, durationSeconds, calculateRemaining, onFinishGame]);
 
-  // Trigger Podium Confetti
+  // Trigger Podium Confetti & Victory Fanfare Sound
   useEffect(() => {
     if (status === 'finished') {
+      sound.playVictoryFanfare();
       confetti({
         particleCount: 160,
         spread: 100,

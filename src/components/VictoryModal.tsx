@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { sound } from '../audio/SoundEngine';
 import {
   Trophy,
   Award,
@@ -51,6 +52,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
+      sound.playVictoryFanfare();
       confetti({
         particleCount: 140,
         spread: 90,
