@@ -651,8 +651,10 @@ export default function App() {
           {/* Q&A Reload Modal */}
           {isQuizOpen && (
             <QuizModal
-              onClose={() => setIsQuizOpen(false)}
-              onSuccessAddAmmo={handleAddAmmo}
+              isOpen={isQuizOpen}
+              onCloseToBattle={() => setIsQuizOpen(false)}
+              onAddAmmo={handleAddAmmo}
+              currentAmmo={ammo37mm}
             />
           )}
 
@@ -669,20 +671,20 @@ export default function App() {
       {/* ═══ 6. MÀN HÌNH TỔNG KẾT KẾT QUẢ CHO HỌC SINH (DEBRIEF / VICTORY) ═══ */}
       {appMode === 'DEBRIEF' && (
         <VictoryModal
+          isOpen={true}
           score={score}
           planesDownedCount={planesDownedCount}
           shotsFired={shotsFired}
           questionsAnswered={questionsAnswered}
           roomPlayers={(roomLiveState?.players as any) || []}
+          currentPlayerName={studentName}
           onRestart={handleLeaveRoom}
           onExit={handleLeaveRoom}
         />
       )}
 
       {/* ═══ 7. MODAL LUẬT CHƠI ═══ */}
-      {isRulesOpen && (
-        <RulesModal onClose={() => setIsRulesOpen(false)} />
-      )}
+      <RulesModal isOpen={isRulesOpen} onClose={() => setIsRulesOpen(false)} />
     </div>
   );
 }

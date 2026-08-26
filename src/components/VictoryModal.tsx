@@ -5,52 +5,57 @@ import {
   Trophy,
   Award,
   Flame,
-  RotateCcw,
   Star,
   CheckCircle2,
-  Users,
   Target,
   Crown,
-  LogOut
+  LogOut,
+  Medal
 } from 'lucide-react';
 
 export interface RoomPlayerStat {
-  _id: string;
+  _id?: string;
   name: string;
   score: number;
   planesDowned: number;
   accuracy: number;
-  isHost: boolean;
+  isHost?: boolean;
 }
 
 interface VictoryModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   score: number;
   planesDownedCount: number;
   shotsFired: number;
   questionsAnswered: number;
-  roomPlayers: RoomPlayerStat[];
-  currentPlayerName: string;
-  onLeaveRoom: () => void;
+  roomPlayers?: RoomPlayerStat[];
+  currentPlayerName?: string;
+  onRestart?: () => void;
+  onExit?: () => void;
+  onLeaveRoom?: () => void;
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
-  isOpen,
+  isOpen = true,
   score,
   planesDownedCount,
   shotsFired,
   questionsAnswered,
-  roomPlayers,
-  currentPlayerName,
+  roomPlayers = [],
+  currentPlayerName = '',
+  onRestart,
+  onExit,
   onLeaveRoom,
 }) => {
+  const handleExit = onLeaveRoom || onExit || onRestart || (() => {});
+
   useEffect(() => {
     if (isOpen) {
       confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#ffd700', '#8b0000', '#ff4500', '#2d3b27']
+        particleCount: 140,
+        spread: 90,
+        origin: { y: 0.55 },
+        colors: ['#ffd700', '#8b0000', '#ff4500', '#2d3b27', '#ffffff']
       });
     }
   }, [isOpen]);
@@ -65,7 +70,9 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
     .sort((a, b) => b.score - a.score);
 
   // Find my current rank in the classroom
-  const myRankIndex = sortedStudents.findIndex((p) => p.name.toLowerCase() === currentPlayerName.toLowerCase());
+  const myRankIndex = sortedStudents.findIndex(
+    (p) => currentPlayerName && p.name.toLowerCase() === currentPlayerName.toLowerCase()
+  );
   const myRank = myRankIndex !== -1 ? myRankIndex + 1 : 1;
 
   // Compute Military Honor Title
@@ -87,109 +94,139 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
         <motion.div
-          initial={{ opacity: 0, scale: 0.88, y: 30 }}
+          initial={{ opacity: 0, scale: 0.9, y: 25 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.88, y: 30 }}
-          className="w-full max-w-2xl bg-[#1c2419] border-2 border-[#d4af37] rounded-3xl shadow-2xl overflow-hidden text-[#f7f6f2] flex flex-col max-h-[90vh]"
+          exit={{ opacity: 0, scale: 0.9, y: 25 }}
+          className="w-full max-w-2xl bg-[#1c2419] border-2 border-[#d4af37] rounded-3xl shadow-2xl overflow-hidden text-[#f7f6f2] flex flex-col max-h-[92vh]"
         >
           {/* Victory Banner */}
-          <div className="bg-[#8b0000] px-6 py-4 text-center border-b border-[#d4af37]/50 relative overflow-hidden shrink-0">
+          <div className="bg-gradient-to-r from-[#8b0000] to-[#b22222] px-6 py-4 text-center border-b border-[#d4af37]/50 relative overflow-hidden shrink-0 shadow-lg">
             <div className="space-y-1">
               <span className="text-xs font-military font-bold tracking-widest text-[#ffd700] uppercase">
-                KẾT QUẢ ĐẤU TRƯỜNG PHÒNG THI ĐẤU
+                ★ TỔNG KẾT CHIẾN DỊCH PHÒNG KHÔNG 1954 ★
               </span>
-              <h2 className="text-2xl md:text-3xl font-black font-military text-white tracking-wide">
-                TỔNG KẾT TRẬN ĐÁNH CẢ LỚP
+              <h2 className="text-xl sm:text-2xl font-black font-military text-white tracking-wide">
+                BẢNG VINH DANH THÀNH TÍCH CẢ LỚP
               </h2>
             </div>
           </div>
 
           {/* Body Content */}
-          <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 custom-scrollbar">
             {/* My Result & Rank Card */}
-            <div className="bg-black/40 p-5 rounded-2xl border border-[#d4af37]/50 text-center space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#8b0000]/60 rounded-full border border-[#ffd700]/40 text-[#ffd700] text-xs font-military font-bold uppercase">
-                <Crown className="w-3.5 h-3.5" /> Hạng Của Bạn Trong Lớp: #{myRank} / {sortedStudents.length || 1}
+            <div className="bg-black/50 p-4 sm:p-5 rounded-2xl border border-[#d4af37]/60 text-center space-y-2 shadow-inner">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#8b0000] rounded-full border border-[#ffd700]/50 text-[#ffd700] text-xs font-military font-bold uppercase shadow-sm">
+                <Crown className="w-3.5 h-3.5" /> Thứ Hạng Của Bạn: #{myRank} / {sortedStudents.length || 1}
               </div>
 
-              <h3 className={`text-xl md:text-2xl font-black font-military ${badgeColor}`}>
+              <h3 className={`text-xl sm:text-2xl font-black font-military ${badgeColor}`}>
                 {militaryRank}
               </h3>
-              <p className="text-xs text-gray-300">
-                Chiến sĩ: <strong className="text-white">{currentPlayerName}</strong>
-              </p>
+              {currentPlayerName && (
+                <p className="text-xs text-gray-300">
+                  Chiến sĩ: <strong className="text-white">{currentPlayerName}</strong>
+                </p>
+              )}
             </div>
 
-            {/* Score Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-military">
-              <div className="p-3 bg-black/30 rounded-2xl border border-white/10">
+            {/* 4 Score Badges Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center font-military">
+              <div className="p-3 bg-black/40 rounded-2xl border border-white/10 shadow-sm">
                 <Award className="w-5 h-5 text-[#ffd700] mx-auto mb-1" />
-                <span className="text-[11px] text-gray-400 block">ĐIỂM SỐ</span>
-                <strong className="text-lg text-[#ffd700] font-mono">{score}</strong>
+                <span className="text-[10px] text-gray-400 block">TỔNG ĐIỂM</span>
+                <strong className="text-base sm:text-lg text-[#ffd700] font-mono">{score}</strong>
               </div>
 
-              <div className="p-3 bg-black/30 rounded-2xl border border-white/10">
+              <div className="p-3 bg-black/40 rounded-2xl border border-white/10 shadow-sm">
                 <Flame className="w-5 h-5 text-orange-400 mx-auto mb-1" />
-                <span className="text-[11px] text-gray-400 block">MÁY BAY HẠ</span>
-                <strong className="text-lg text-white font-mono">{planesDownedCount}</strong>
+                <span className="text-[10px] text-gray-400 block">MÁY BAY HẠ</span>
+                <strong className="text-base sm:text-lg text-white font-mono">{planesDownedCount}</strong>
               </div>
 
-              <div className="p-3 bg-black/30 rounded-2xl border border-white/10">
+              <div className="p-3 bg-black/40 rounded-2xl border border-white/10 shadow-sm">
                 <Target className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                <span className="text-[11px] text-gray-400 block">CHÍNH XÁC</span>
-                <strong className="text-lg text-emerald-300 font-mono">{accuracy}%</strong>
+                <span className="text-[10px] text-gray-400 block">CHÍNH XÁC</span>
+                <strong className="text-base sm:text-lg text-emerald-300 font-mono">{accuracy}%</strong>
               </div>
 
-              <div className="p-3 bg-black/30 rounded-2xl border border-white/10">
+              <div className="p-3 bg-black/40 rounded-2xl border border-white/10 shadow-sm">
                 <CheckCircle2 className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-                <span className="text-[11px] text-gray-400 block">CÂU ĐÚNG</span>
-                <strong className="text-lg text-blue-300 font-mono">{questionsAnswered}</strong>
+                <span className="text-[10px] text-gray-400 block">CÂU ĐÚNG</span>
+                <strong className="text-base sm:text-lg text-blue-300 font-mono">{questionsAnswered}</strong>
               </div>
             </div>
 
-            {/* Room Leaderboard Table */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between font-military text-xs border-b border-white/10 pb-2">
+            {/* 📋 BẢNG XẾP HẠNG CẢ LỚP (FULL LEADERBOARD & TOP 5 HIGHLIGHT) */}
+            <div className="space-y-3 pt-1">
+              <div className="flex items-center justify-between font-military text-xs border-b border-white/15 pb-2">
                 <span className="text-[#ffd700] font-bold flex items-center gap-1.5 uppercase">
-                  <Trophy className="w-4 h-4" /> Bảng Xếp Hạng Phòng Hiện Tại ({sortedStudents.length} Học Sinh)
+                  <Trophy className="w-4 h-4 text-[#ffd700]" />
+                  Bảng Xếp Hạng Toàn Bộ Lớp ({sortedStudents.length} Học Sinh)
                 </span>
-                <span className="text-gray-400">Đồng bộ Realtime</span>
+                <span className="text-emerald-400 text-[11px] font-bold">Top 5 Vinh Danh</span>
               </div>
 
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
                 {sortedStudents.map((p, idx) => {
-                  const isMe = p.name.toLowerCase() === currentPlayerName.toLowerCase();
+                  const rank = idx + 1;
+                  const isMe = currentPlayerName && p.name.toLowerCase() === currentPlayerName.toLowerCase();
+                  const isTop1 = rank === 1;
+                  const isTop2 = rank === 2;
+                  const isTop3 = rank === 3;
+                  const isTop5 = rank <= 5;
+
                   return (
                     <div
                       key={p._id || idx}
-                      className={`p-3 rounded-xl border flex items-center justify-between gap-3 font-military text-xs transition-all ${
+                      className={`p-3 rounded-2xl border flex items-center justify-between gap-3 font-military text-xs transition-all ${
                         isMe
-                          ? 'bg-[#44563a]/60 border-emerald-400 shadow-md'
-                          : 'bg-black/30 border-white/10'
+                          ? 'bg-[#44563a]/80 border-emerald-400 ring-2 ring-emerald-500/40 shadow-lg'
+                          : isTop1
+                          ? 'bg-gradient-to-r from-[#8b0000]/70 to-[#b22222]/50 border-[#ffd700]'
+                          : isTop2
+                          ? 'bg-black/50 border-gray-300/60'
+                          : isTop3
+                          ? 'bg-black/50 border-amber-700/60'
+                          : isTop5
+                          ? 'bg-emerald-950/30 border-emerald-500/40'
+                          : 'bg-black/35 border-white/10'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
-                          idx === 0
-                            ? 'bg-[#ffd700] text-black font-black'
-                            : idx === 1
-                            ? 'bg-gray-300 text-black'
-                            : idx === 2
-                            ? 'bg-amber-700 text-white'
-                            : 'bg-black/50 text-gray-400'
-                        }`}>
-                          {idx + 1}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                            isTop1
+                              ? 'bg-[#ffd700] text-black font-black'
+                              : isTop2
+                              ? 'bg-gray-300 text-black'
+                              : isTop3
+                              ? 'bg-amber-700 text-white'
+                              : isTop5
+                              ? 'bg-emerald-700 text-emerald-100'
+                              : 'bg-black/60 text-gray-400 border border-white/10'
+                          }`}
+                        >
+                          {rank}
                         </div>
-                        <span className={`font-bold ${isMe ? 'text-yellow-300' : 'text-white'}`}>
-                          {p.name} {isMe && '(Bạn)'}
-                        </span>
+
+                        <div className="truncate">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-bold text-sm truncate ${isMe ? 'text-yellow-300' : 'text-white'}`}>
+                              {p.name} {isMe && '(Bạn)'}
+                            </span>
+                            {isTop1 && <Crown className="w-3.5 h-3.5 text-[#ffd700] shrink-0" />}
+                            {isTop5 && !isTop1 && <Medal className="w-3 h-3 text-emerald-400 shrink-0" />}
+                          </div>
+                          <span className="text-[10px] text-gray-400 font-mono block">
+                            Hạ {p.planesDowned} máy bay · Chính xác {p.accuracy}%
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-3 font-mono">
-                        <span className="text-orange-400">{p.planesDowned} máy bay</span>
-                        <strong className="text-[#ffd700] text-sm">{p.score} Đ</strong>
+                      <div className="flex items-center gap-3 font-mono shrink-0">
+                        <strong className="text-[#ffd700] text-base font-black">{p.score} Đ</strong>
                       </div>
                     </div>
                   );
@@ -201,8 +238,8 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           {/* Footer Action */}
           <div className="p-4 bg-black/40 border-t border-[#44563a] flex justify-end shrink-0">
             <button
-              onClick={onLeaveRoom}
-              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-950/60 cursor-pointer"
+              onClick={handleExit}
+              className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-gradient-to-r from-[#8b0000] to-[#b22222] hover:from-[#a00000] hover:to-[#c41e3a] text-white font-military font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-950/60 transition-transform hover:scale-105 cursor-pointer"
             >
               <LogOut className="w-4 h-4" /> RỜI PHÒNG VỀ TRANG CHỦ
             </button>

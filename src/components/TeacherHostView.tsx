@@ -16,7 +16,12 @@ import {
   X,
   LogOut,
   Sliders,
-  Plus
+  Plus,
+  Award,
+  Flame,
+  Target,
+  CheckCircle2,
+  Medal
 } from 'lucide-react';
 
 export interface RoomPlayer {
@@ -79,7 +84,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(joinLink)}`;
 
   // ═══ 1. CALCULATE TIME REMAINING FROM REAL SERVER TIMESTAMP ═══
-  // Tránh hoàn toàn lỗi bị đứng giờ hoặc bị reset về 3p khi chuyển tab / thu nhỏ trình duyệt
   const calculateRemaining = useCallback(() => {
     if (status !== 'playing' || !startedAt) {
       return durationSeconds;
@@ -108,7 +112,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
     checkTimer();
     const timer = setInterval(checkTimer, 500);
 
-    // Kích hoạt tính toán lại tức thì khi người dùng quay lại tab trình duyệt
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         checkTimer();
@@ -128,9 +131,9 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
   useEffect(() => {
     if (status === 'finished') {
       confetti({
-        particleCount: 150,
-        spread: 90,
-        origin: { y: 0.5 },
+        particleCount: 160,
+        spread: 100,
+        origin: { y: 0.4 },
         colors: ['#ffd700', '#8b0000', '#2d3b27', '#ffffff']
       });
     }
@@ -154,7 +157,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Change duration preset
   const handleSelectDuration = (seconds: number) => {
     setCustomMinutes(Math.round(seconds / 60).toString());
     if (onUpdateDuration) {
@@ -162,7 +164,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
     }
   };
 
-  // Apply custom typed minutes
   const handleApplyCustomMinutes = () => {
     const parsed = parseInt(customMinutes, 10);
     if (!isNaN(parsed) && parsed > 0 && parsed <= 120) {
@@ -173,7 +174,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
     }
   };
 
-  // Extend duration during match (+1 min / +2 mins)
   const handleExtendMatch = (additionalSeconds: number) => {
     if (onUpdateDuration) {
       onUpdateDuration(durationSeconds + additionalSeconds);
@@ -222,16 +222,14 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
 
           {status === 'playing' && (
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Big Projected Clock */}
               <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl bg-black/70 border border-[#d4af37]/60 text-[#ffd700] font-mono text-lg sm:text-xl font-black">
                 <Clock className={`w-5 h-5 ${timeLeft <= 30 ? 'text-red-500 animate-pulse' : 'text-[#ffd700]'}`} />
                 <span>{formatTime(timeLeft)}</span>
               </div>
 
-              {/* Quick Extend Buttons for Teacher */}
               <button
                 onClick={() => handleExtendMatch(60)}
-                className="px-2.5 py-1.5 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 text-xs font-military font-bold flex items-center gap-1 transition-all"
+                className="px-2.5 py-1.5 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 text-xs font-military font-bold flex items-center gap-1 transition-all cursor-pointer"
                 title="Cộng thêm 1 phút thi đấu"
               >
                 <Plus className="w-3.5 h-3.5" /> 1P
@@ -239,13 +237,12 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
 
               <button
                 onClick={() => handleExtendMatch(120)}
-                className="px-2.5 py-1.5 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 text-xs font-military font-bold flex items-center gap-1 transition-all"
+                className="px-2.5 py-1.5 rounded-xl bg-[#2d3b27] hover:bg-[#3a4b32] border border-emerald-500/40 text-emerald-300 text-xs font-military font-bold flex items-center gap-1 transition-all cursor-pointer"
                 title="Cộng thêm 2 phút thi đấu"
               >
                 <Plus className="w-3.5 h-3.5" /> 2P
               </button>
 
-              {/* Early Finish */}
               <button
                 onClick={onFinishGame}
                 className="px-3 sm:px-4 py-2 rounded-xl bg-red-900/60 hover:bg-red-900 border border-red-500/50 text-red-200 font-military text-xs font-bold transition-all cursor-pointer"
@@ -278,7 +275,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
       {status === 'waiting' && (
         <main className="flex-1 flex flex-col justify-between p-4 sm:p-8 overflow-y-auto">
           <div className="max-w-4xl w-full mx-auto text-center space-y-5 my-auto">
-            {/* Header info */}
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-military font-bold text-xs uppercase tracking-widest">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
@@ -291,7 +287,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
 
             {/* Giant PIN Banner & Buttons */}
             <div className="flex flex-col md:flex-row items-center justify-center gap-6 bg-[#1c2419]/90 border-2 border-[#ffd700] rounded-3xl p-5 sm:p-7 shadow-2xl backdrop-blur-md">
-              {/* QR Code Container */}
               <div
                 onClick={() => setShowLargeQr(true)}
                 className="bg-white p-3 rounded-2xl border-2 border-emerald-500/60 shadow-lg cursor-pointer hover:scale-105 transition-all group relative shrink-0"
@@ -303,7 +298,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                 </div>
               </div>
 
-              {/* PIN Code Box & Copy Controls */}
               <div className="space-y-3.5 text-center md:text-left">
                 <div>
                   <span className="text-xs uppercase font-military tracking-widest text-gray-400 block mb-1">
@@ -341,14 +335,13 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
               </div>
             </div>
 
-            {/* ⏱️ THIẾT LẬP THỜI LƯỢNG TRẬN ĐẤU CHO GIẢNG VIÊN (3P, 5P, 10P, 15P HOẶC TỰ NHẬP) */}
+            {/* ⏱️ THIẾT LẬP THỜI LƯỢNG TRẬN ĐẤU */}
             <div className="bg-[#1c2419]/90 border border-[#44563a] rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 font-military">
               <div className="flex items-center gap-2 text-yellow-300 text-xs font-bold">
                 <Sliders className="w-4 h-4 text-[#ffd700]" />
                 <span>THỜI LƯỢNG TRẬN ĐẤU:</span>
               </div>
 
-              {/* Preset Buttons */}
               <div className="flex flex-wrap items-center justify-center gap-2">
                 {[
                   { label: '3 Phút', sec: 180 },
@@ -374,7 +367,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                 })}
               </div>
 
-              {/* Custom Input Box for Teacher */}
               <div className="flex items-center gap-2">
                 <label htmlFor={customMinutesInputId} className="sr-only">
                   Nhập số phút
@@ -410,7 +402,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                 </span>
               </div>
 
-              {/* Student Cards Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-48 overflow-y-auto p-1 custom-scrollbar">
                 {studentPlayers.map((player, idx) => (
                   <motion.div
@@ -499,7 +490,6 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Stats */}
                     <div className="flex items-center gap-3 sm:gap-4 shrink-0 font-mono text-xs sm:text-sm">
                       <div className="text-right hidden sm:block">
                         <span className="text-gray-400 text-[10px] block">MÁY BAY HẠ</span>
@@ -551,31 +541,36 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
         </main>
       )}
 
-      {/* ═══ 3. TOP 3 PODIUM & RESULTS VIEW (FINISHED STATUS) ═══ */}
+      {/* ═══ 3. TOP 3 PODIUM & FULL CLASSROOM LEADERBOARD (FINISHED STATUS) ═══ */}
       {status === 'finished' && (
-        <main className="flex-1 p-6 flex flex-col justify-between overflow-y-auto">
-          <div className="max-w-4xl w-full mx-auto space-y-8 my-auto text-center">
+        <main className="flex-1 p-4 sm:p-8 flex flex-col justify-start overflow-y-auto custom-scrollbar">
+          <div className="max-w-5xl w-full mx-auto space-y-8 text-center pb-8">
+            {/* Title Banner */}
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-5 py-1 rounded-full bg-[#8b0000] border border-[#ffd700] text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-xl">
-                ★ TOÀN THẮNG CHIẾN DỊCH ĐIỆN BIÊN PHỦ ★
+              <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-full bg-[#8b0000] border border-[#ffd700] text-[#ffd700] font-military font-bold text-xs uppercase tracking-widest shadow-xl">
+                ★ TOÀN THẮNG CHIẾN DỊCH ĐIỆN BIÊN PHỦ 1954 ★
               </div>
-              <h2 className="text-3xl sm:text-5xl font-black font-military text-white tracking-wide">
-                BẢNG VÀNG VINH DANH TOP 3 XUẤT SẮC
+              <h2 className="text-2xl sm:text-4xl font-black font-military text-white tracking-wide">
+                BẢNG VÀNG VINH DANH CHIẾN CÔNG CẢ LỚP
               </h2>
+              <p className="text-xs sm:text-sm text-gray-300 font-military">
+                Tổng kết thành tích thi đua bắn máy bay và giải câu hỏi lịch sử của toàn bộ chiến sĩ
+              </p>
             </div>
 
             {/* 3D Top 3 Podium */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-6 items-end max-w-2xl mx-auto pt-6">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 items-end max-w-2xl mx-auto pt-4">
               {/* 🥈 Rank 2 */}
               <div className="flex flex-col items-center space-y-2">
-                <span className="font-military font-bold text-xs sm:text-sm text-gray-300 truncate max-w-[120px]">
+                <span className="font-military font-bold text-xs sm:text-sm text-gray-200 truncate max-w-[120px]">
                   {studentPlayers[1]?.name || '---'}
                 </span>
-                <span className="font-mono font-bold text-xs text-yellow-400">
+                <span className="font-mono font-bold text-xs sm:text-sm text-yellow-300">
                   {studentPlayers[1]?.score || 0} Đ
                 </span>
-                <div className="w-full h-32 sm:h-40 bg-gradient-to-t from-gray-700 to-gray-500 rounded-t-2xl border-t-4 border-gray-300 flex items-center justify-center font-military font-black text-2xl sm:text-4xl text-black shadow-2xl">
-                  2
+                <div className="w-full h-28 sm:h-36 bg-gradient-to-t from-gray-700 to-gray-500 rounded-t-2xl border-t-4 border-gray-300 flex flex-col items-center justify-center shadow-2xl">
+                  <span className="font-military font-black text-2xl sm:text-4xl text-black">2</span>
+                  <span className="text-[10px] font-military font-bold text-gray-900 uppercase">Á QUÂN</span>
                 </div>
               </div>
 
@@ -585,25 +580,123 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
                 <span className="font-military font-bold text-sm sm:text-base text-yellow-300 truncate max-w-[150px]">
                   {studentPlayers[0]?.name || '---'}
                 </span>
-                <span className="font-mono font-black text-sm text-[#ffd700]">
+                <span className="font-mono font-black text-sm sm:text-base text-[#ffd700]">
                   {studentPlayers[0]?.score || 0} Đ
                 </span>
-                <div className="w-full h-44 sm:h-56 bg-gradient-to-t from-[#8b0000] to-[#b22222] rounded-t-2xl border-t-4 border-[#ffd700] flex items-center justify-center font-military font-black text-4xl sm:text-6xl text-[#ffd700] shadow-2xl shadow-red-950">
-                  1
+                <div className="w-full h-40 sm:h-52 bg-gradient-to-t from-[#8b0000] to-[#b22222] rounded-t-2xl border-t-4 border-[#ffd700] flex flex-col items-center justify-center shadow-2xl shadow-red-950">
+                  <span className="font-military font-black text-4xl sm:text-6xl text-[#ffd700]">1</span>
+                  <span className="text-[11px] font-military font-black text-yellow-300 uppercase tracking-wider">QUÁN QUÂN</span>
                 </div>
               </div>
 
               {/* 🥉 Rank 3 */}
               <div className="flex flex-col items-center space-y-2">
-                <span className="font-military font-bold text-xs sm:text-sm text-gray-300 truncate max-w-[120px]">
+                <span className="font-military font-bold text-xs sm:text-sm text-gray-200 truncate max-w-[120px]">
                   {studentPlayers[2]?.name || '---'}
                 </span>
-                <span className="font-mono font-bold text-xs text-yellow-400">
+                <span className="font-mono font-bold text-xs sm:text-sm text-yellow-300">
                   {studentPlayers[2]?.score || 0} Đ
                 </span>
-                <div className="w-full h-24 sm:h-28 bg-gradient-to-t from-amber-900 to-amber-700 rounded-t-2xl border-t-4 border-amber-500 flex items-center justify-center font-military font-black text-2xl sm:text-4xl text-white shadow-2xl">
-                  3
+                <div className="w-full h-20 sm:h-26 bg-gradient-to-t from-amber-900 to-amber-700 rounded-t-2xl border-t-4 border-amber-500 flex flex-col items-center justify-center shadow-2xl">
+                  <span className="font-military font-black text-2xl sm:text-4xl text-white">3</span>
+                  <span className="text-[10px] font-military font-bold text-amber-200 uppercase">HẠNG BA</span>
                 </div>
+              </div>
+            </div>
+
+            {/* 📋 BẢNG XẾP HẠNG TOÀN DIỆN CẢ LỚP (FULL LEADERBOARD LIST) */}
+            <div className="bg-[#1c2419]/95 border-2 border-[#d4af37]/60 rounded-3xl p-5 sm:p-7 shadow-2xl text-left space-y-4 max-w-4xl mx-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#44563a] pb-3">
+                <div className="flex items-center gap-2 text-white font-military font-black text-base sm:text-lg">
+                  <Trophy className="w-5 h-5 text-[#ffd700]" />
+                  <span>DANH SÁCH THỨ HẠNG CẢ LỚP ({studentPlayers.length} CHIẾN SĨ)</span>
+                </div>
+                <span className="text-xs text-yellow-400 font-military font-bold">
+                  ★ Top 5 được tuyên dương dũng sĩ phòng không ★
+                </span>
+              </div>
+
+              {/* Table List of All Players */}
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
+                {studentPlayers.map((player, idx) => {
+                  const rank = idx + 1;
+                  const isTop1 = rank === 1;
+                  const isTop2 = rank === 2;
+                  const isTop3 = rank === 3;
+                  const isTop5 = rank <= 5;
+
+                  return (
+                    <motion.div
+                      key={player._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.03 }}
+                      className={`p-3.5 rounded-2xl border flex items-center justify-between gap-4 font-military transition-all ${
+                        isTop1
+                          ? 'bg-gradient-to-r from-[#8b0000]/80 to-[#b22222]/60 border-[#ffd700] shadow-lg shadow-red-950/60'
+                          : isTop2
+                          ? 'bg-black/60 border-gray-300/70'
+                          : isTop3
+                          ? 'bg-black/60 border-amber-700/70'
+                          : isTop5
+                          ? 'bg-emerald-950/40 border-emerald-500/50'
+                          : 'bg-black/40 border-white/10'
+                      }`}
+                    >
+                      {/* Rank & Name */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm shrink-0 shadow-sm ${
+                            isTop1
+                              ? 'bg-[#ffd700] text-black'
+                              : isTop2
+                              ? 'bg-gray-300 text-black'
+                              : isTop3
+                              ? 'bg-amber-700 text-white'
+                              : isTop5
+                              ? 'bg-emerald-700 text-emerald-100'
+                              : 'bg-black/60 text-gray-400 border border-white/10'
+                          }`}
+                        >
+                          {rank}
+                        </div>
+
+                        <div className="truncate">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm sm:text-base text-white truncate">
+                              {player.name}
+                            </span>
+                            {isTop1 && <Crown className="w-4 h-4 text-[#ffd700] shrink-0" />}
+                            {isTop5 && !isTop1 && <Medal className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                          </div>
+                          <span className="text-[11px] text-gray-400 font-mono">
+                            Hạ {player.planesDowned} máy bay · {player.questionsAnswered} câu trắc nghiệm đúng
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Detailed Stats */}
+                      <div className="flex items-center gap-3 sm:gap-5 shrink-0 font-mono text-xs sm:text-sm">
+                        <div className="text-right hidden sm:block">
+                          <span className="text-gray-400 text-[10px] block">MÁY BAY HẠ</span>
+                          <span className="font-bold text-orange-400">{player.planesDowned}</span>
+                        </div>
+
+                        <div className="text-right hidden sm:block">
+                          <span className="text-gray-400 text-[10px] block">CHÍNH XÁC</span>
+                          <span className="font-bold text-emerald-400">{player.accuracy}%</span>
+                        </div>
+
+                        <div className="text-right bg-black/50 px-3.5 py-1.5 rounded-xl border border-white/15">
+                          <span className="text-[10px] text-gray-400 block">TỔNG ĐIỂM</span>
+                          <span className="font-black text-base sm:text-lg text-[#ffd700]">
+                            {player.score}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -616,7 +709,7 @@ export const TeacherHostView: React.FC<TeacherHostViewProps> = ({
           <div className="bg-[#1c2419] border-2 border-[#ffd700] rounded-3xl p-8 max-w-sm w-full text-center space-y-6 relative">
             <button
               onClick={() => setShowLargeQr(false)}
-              className="absolute top-4 right-4 p-2 rounded-xl bg-black/40 hover:bg-black/60 text-gray-300 hover:text-white"
+              className="absolute top-4 right-4 p-2 rounded-xl bg-black/40 hover:bg-black/60 text-gray-300 hover:text-white cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
