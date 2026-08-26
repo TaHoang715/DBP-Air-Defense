@@ -41,6 +41,21 @@ export const CanvasGame: React.FC<CanvasGameProps> = ({
   const searchlightAngleRef = useRef<number>(0);
   const screenShakeRef = useRef<number>(0);
 
+  // Sync props to refs to avoid tearing down the 60 FPS game loop on prop changes
+  const isPlayingRef = useRef(isPlaying);
+  const isPausedRef = useRef(isPaused);
+  const useFlakRef = useRef(useFlak);
+  const elapsedSecondsRef = useRef(elapsedSeconds);
+  const onScoreGainedRef = useRef(onScoreGained);
+  const onPlaneDownedRef = useRef(onPlaneDowned);
+
+  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+  useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
+  useEffect(() => { useFlakRef.current = useFlak; }, [useFlak]);
+  useEffect(() => { elapsedSecondsRef.current = elapsedSeconds; }, [elapsedSeconds]);
+  useEffect(() => { onScoreGainedRef.current = onScoreGained; }, [onScoreGained]);
+  useEffect(() => { onPlaneDownedRef.current = onPlaneDowned; }, [onPlaneDowned]);
+
   // Handle Mouse Aiming
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
@@ -69,23 +84,23 @@ export const CanvasGame: React.FC<CanvasGameProps> = ({
 
   // Fire Cannon
   const handleFire = useCallback(() => {
-    if (!isPlaying || isPaused) return;
+    if (!isPlayingRef.current || isPausedRef.current) return;
 
     // Check ammo
-    const currentAmmo = useFlak ? ammoFlak : ammo37mm;
+    const currentAmmo = useFlakRef.current ? ammoFlak : ammo37mm;
     if (currentAmmo <= 0) {
       sound.playQuizWrong();
       onNeedAmmo();
       return;
     }
 
-    const consumed = onConsumeAmmo(useFlak);
+    const consumed = onConsumeAmmo(useFlakRef.current);
     if (!consumed) return;
 
     // Fire sound & animation
-    sound.playCannonShot(useFlak);
+    sound.playCannonShot(useFlakRef.current);
     cannonRef.current.triggerRecoil();
-    screenShakeRef.current = useFlak ? 8 : 4;
+    screenShakeRef.current = useFlakRef.current ? 8 : 4;
 
     // Bullet origin from cannon
     const startX = cannonRef.current.x;
@@ -93,17 +108,17 @@ export const CanvasGame: React.FC<CanvasGameProps> = ({
     const targetX = mousePosRef.current.x;
     const targetY = mousePosRef.current.y;
 
-    particleSystemRef.current.fireBullet(startX, startY, targetX, targetY, useFlak);
-  }, [isPlaying, isPaused, ammo37mm, ammoFlak, useFlak, onConsumeAmmo, onNeedAmmo]);
+    particleSystemRef.current.fireBullet(startX, startY, targetX, targetY, useFlakRef.current);
+  }, [ammo37mm, ammoFlak, onConsumeAmmo, onNeedAmmo]);
 
-  // Main 60 FPS Game Loop
+  // Main 60 FPS Game Loop (Initialized once on mount, completely prevents freezing!)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Resize canvas
+    // Resize canvas to parent container
     const handleResize = () => {
       if (!canvas) return;
       canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
@@ -114,13 +129,15 @@ export const CanvasGame: React.FC<CanvasGameProps> = ({
     window.addEventListener('resize', handleResize);
 
     const loop = (timestamp: number) => {
-      if (isPlaying && !isPaused) {
-        // 1. Spawn Aircraft (Interval shrinks dynamically as match progresses)
-        const spawnInterval = Math.max(1700 - elapsedSeconds * 7, 750);
-        if (timestamp - lastSpawnTimeRef.current > spawnInterval) {
+      if (isPlayingRef.current && !isPausedRef.current) {
+        const curElapsed = elapsedSecondsRef.current;
+
+        // 1. Spawn Aircraft (Capped to max 12 planes to avoid overloading)
+        const spawnInterval = Math.max(1700 - curElapsed * 7, 850);
+        if (timestamp - lastSpawnTimeRef.current > spawnInterval && planesRef.current.length < 12) {
           lastSpawnTimeRef.current = timestamp;
           const randomPlaneData = HISTORICAL_PLANES[Math.floor(Math.random() * HISTORICAL_PLANES.length)];
-          const newPlane = new PlaneEntity(randomPlaneData, canvas.width, canvas.height, elapsedSeconds);
+          const newPlane = new PlaneEntity(randomPlaneData, canvas.width, canvas.height, curElapsed);
           planesRef.current.push(newPlane);
         }
 
@@ -156,8 +173,8 @@ export const CanvasGame: React.FC<CanvasGameProps> = ({
               if (downed) {
                 sound.playPlaneDownAlarm();
                 screenShakeRef.current = 12;
-                onScoreGained(plane.data.baseScore);
-                onPlaneDowned(plane.data);
+                if (onScoreGainedRef.current) onScoreGainedRef.current(plane.data.baseScore);
+                if (onPlaneDownedRef.current) onPlaneDownedRef.current(plane.data);
               }
               break;
             }
@@ -263,7 +280,7 @@ export const CanvasGame: React.FC<CanvasGameProps> = ({
       particleSystemRef.current.draw(ctx);
 
       // 5.6 Render 37mm Anti-Aircraft Cannon Unit & Optical Crosshair HUD
-      cannonRef.current.draw(ctx, mousePosRef.current.x, mousePosRef.current.y, useFlak);
+      cannonRef.current.draw(ctx, mousePosRef.current.x, mousePosRef.current.y, useFlakRef.current);
 
       ctx.restore();
 
@@ -276,7 +293,7 @@ export const CanvasGame: React.FC<CanvasGameProps> = ({
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animFrameIdRef.current);
     };
-  }, [isPlaying, isPaused, elapsedSeconds, useFlak, onScoreGained, onPlaneDowned]);
+  }, []); // Run once on mount for absolute smooth 60 FPS performance without freezing!
 
   return (
     <canvas

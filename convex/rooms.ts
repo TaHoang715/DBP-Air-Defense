@@ -1,5 +1,5 @@
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 // 1. Giảng viên / Host tạo phòng thi đấu mới với mã PIN
 export const createRoom = mutation({
@@ -55,7 +55,7 @@ export const joinRoom = mutation({
     const cleanName = args.playerName.trim();
 
     if (!cleanName) {
-      throw new Error("Vui lòng nhập Họ & Tên của bạn!");
+      throw new ConvexError("Vui lòng nhập Họ & Tên của bạn!");
     }
 
     const room = await ctx.db
@@ -64,16 +64,16 @@ export const joinRoom = mutation({
       .first();
 
     if (!room) {
-      throw new Error("Không tìm thấy phòng với mã PIN này! Vui lòng kiểm tra lại.");
+      throw new ConvexError("Không tìm thấy phòng với mã PIN này! Vui lòng kiểm tra lại.");
     }
 
     // 🔒 1. Khóa phòng: Không cho phép vào giữa chừng khi trận đấu đã bắt đầu
     if (room.status === "playing") {
-      throw new Error("Trận đấu đang diễn ra! Phòng đã bị khóa, không thể tham gia giữa chừng.");
+      throw new ConvexError("Trận đấu đang diễn ra! Phòng đã bị khóa, không thể tham gia giữa chừng.");
     }
 
     if (room.status === "finished") {
-      throw new Error("Trận đấu trong phòng này đã kết thúc!");
+      throw new ConvexError("Trận đấu trong phòng này đã kết thúc!");
     }
 
     // 🚫 2. Kiểm tra trùng tên: Tuyệt đối không cho phép đặt tên trùng nhau
@@ -87,7 +87,7 @@ export const joinRoom = mutation({
     );
 
     if (isDuplicate) {
-      throw new Error(`Tên "${cleanName}" đã có người sử dụng trong phòng! Vui lòng chọn tên khác.`);
+      throw new ConvexError(`Tên "${cleanName}" đã có người sử dụng trong phòng! Vui lòng chọn tên khác.`);
     }
 
     const playerId = await ctx.db.insert("dbpPlayers", {

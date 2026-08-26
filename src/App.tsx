@@ -26,6 +26,21 @@ import {
 
 const INITIAL_TIME = 300; // 5 minutes default battle session
 
+// Clean human-friendly error formatter for Convex server errors
+const parseCleanErrorMessage = (err: any): string => {
+  if (!err) return 'Đã xảy ra lỗi không xác định. Vui lòng thử lại!';
+  if (err.data && typeof err.data === 'string') return err.data;
+  let msg = err.message || String(err);
+  msg = msg
+    .replace(/\[CONVEX\s+[^\]]+\]/gi, '')
+    .replace(/\[Request ID:[^\]]+\]/gi, '')
+    .replace(/Server Error Called by client:\s*/gi, '')
+    .replace(/Uncaught\s+Error:\s*/gi, '')
+    .replace(/^Error:\s*/gi, '')
+    .trim();
+  return msg || 'Không thể vào phòng thi đấu. Vui lòng kiểm tra lại mã PIN!';
+};
+
 export default function App() {
   // Game Mode: 'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'
   const [appMode, setAppMode] = useState<'MENU' | 'TEACHER_HOST' | 'STUDENT_WAITING' | 'STUDENT_PLAYING' | 'DEBRIEF'>('MENU');
@@ -199,7 +214,7 @@ export default function App() {
       setShowAdminLoginModal(false);
       setAppMode('TEACHER_HOST');
     } catch (err: any) {
-      setAdminError('Lỗi khi mở phòng thi đấu: ' + (err.message || String(err)));
+      setAdminError('Lỗi khi mở phòng thi đấu: ' + parseCleanErrorMessage(err));
     }
   };
 
@@ -242,7 +257,7 @@ export default function App() {
       }
       setIsPaused(false);
     } catch (err: any) {
-      setStudentError(err.message || 'Không thể vào phòng thi đấu. Vui lòng kiểm tra lại mã PIN!');
+      setStudentError(parseCleanErrorMessage(err));
     }
   };
 
@@ -268,7 +283,7 @@ export default function App() {
     }
   };
 
-  // Finished reading dossier (6s countdown elapsed)
+  // Finished reading dossier (countdown elapsed & clicked continue)
   const handleFinishedReadingDossier = () => {
     setActiveDossierPlane(null);
   };
@@ -645,7 +660,7 @@ export default function App() {
           {activeDossierPlane && (
             <PlaneDossierModal
               plane={activeDossierPlane}
-              onFinishReading={handleFinishedReadingDossier}
+              onFinishedReading={handleFinishedReadingDossier}
             />
           )}
         </div>
