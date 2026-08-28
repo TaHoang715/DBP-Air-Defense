@@ -1056,35 +1056,12 @@ export const WordGuessGame: React.FC<{ onBackToHub: () => void }> = ({ onBackToH
   const isHost = currentPlayer?.isHost ?? false;
   const isInRoom = roomId && playerId && room && currentPlayer;
 
-  // Audio Playback Logic
-  useEffect(() => {
-    const lobbyAudio = lobbyAudioRef.current;
-    const gameAudio = gameAudioRef.current;
-    const winAudio = winAudioRef.current;
-
-    if (!lobbyAudio || !gameAudio || !winAudio) return;
-
-    lobbyAudio.pause();
-    gameAudio.pause();
-    winAudio.pause();
-
-    if (lobbyMusicEnabled) {
-      if (!isInRoom || room?.status === "lobby") {
-        lobbyAudio.play().catch(() => {});
-      } else if (room?.status === "playing") {
-        gameAudio.play().catch(() => {});
-      } else if (room?.status === "finished") {
-        winAudio.play().catch(() => {});
-      }
-    }
-  }, [isInRoom, room?.status, lobbyMusicEnabled]);
-
   let content: React.ReactNode;
 
   if (!isInRoom) {
     content = <LobbyView onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} error={error} loading={loading} />;
   } else if (room.status === "lobby") {
-    content = <WaitingRoom room={room} players={players ?? []} isHost={isHost} onStart={handleStartGame} onLeave={handleLeaveGame} musicEnabled={lobbyMusicEnabled} onToggleMusic={() => setLobbyMusicEnabled(v => !v)} />;
+    content = <WaitingRoom room={room} players={players ?? []} isHost={isHost} onStart={handleStartGame} onLeave={handleLeaveGame} />;
   } else if (room.status === "playing" && room.phase === "choosing") {
     content = <GameplayView room={room} currentPlayer={currentPlayer} players={players ?? []} onChoice={handleAnswerSubmit} onForceRound={handleForceProcessRound} onEndGame={handleEndGame} />;
   } else if (room.status === "playing" && room.phase === "results") {
@@ -1095,10 +1072,6 @@ export const WordGuessGame: React.FC<{ onBackToHub: () => void }> = ({ onBackToH
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-between p-4 sm:p-6 bg-[#0a0f08] text-[#f7f6f2] font-sans camo-gradient trench-texture overflow-x-hidden selection:bg-red-700 selection:text-white">
-      <audio ref={lobbyAudioRef} src={ovtkMp3} loop muted={!lobbyMusicEnabled} />
-      <audio ref={gameAudioRef} src={liberationMp3} loop muted={!lobbyMusicEnabled} />
-      <audio ref={winAudioRef} src={winMp3} muted={!lobbyMusicEnabled} />
-
       {/* Top Header Bar */}
       <div className="w-full max-w-5xl flex justify-between items-center mb-6 relative z-20">
         <button
@@ -1125,13 +1098,6 @@ export const WordGuessGame: React.FC<{ onBackToHub: () => void }> = ({ onBackToH
         )}
 
         <div className="flex gap-2">
-          <button
-            onClick={() => setLobbyMusicEnabled(!lobbyMusicEnabled)}
-            className="p-2.5 bg-black/40 hover:bg-black/60 rounded-xl border border-white/20 text-yellow-300 cursor-pointer"
-            title="Bật/Tắt Âm thanh"
-          >
-            {lobbyMusicEnabled ? <Volume2 className="w-5 h-5 text-emerald-400" /> : <VolumeX className="w-5 h-5 text-red-400" />}
-          </button>
           <button
             onClick={() => setShowRules(true)}
             className="p-2.5 bg-black/40 hover:bg-black/60 rounded-xl border border-white/20 text-yellow-300 cursor-pointer"
